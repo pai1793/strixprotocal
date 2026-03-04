@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strix Trading Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+:root {
+  --bg-0:#08090d;--bg-1:#0d0f15;--bg-2:#13161f;--bg-3:#191d29;--bg-4:#1f2433;
+  --bg-hover:#252a3a;--border-1:#1e2231;--border-2:#2a2f42;--border-focus:#5b7fff;
+  --text-1:#eceef4;--text-2:#a0a5b8;--text-3:#6b7089;--text-4:#464b5e;
+  --accent:#5b7fff;--accent-dim:rgba(91,127,255,.12);--accent-glow:rgba(91,127,255,.3);
+  --green:#34d399;--green-dim:rgba(52,211,153,.12);--green-glow:rgba(52,211,153,.25);
+  --red:#f87171;--red-dim:rgba(248,113,113,.12);--red-glow:rgba(248,113,113,.25);
+  --amber:#fbbf24;--amber-dim:rgba(251,191,36,.12);
+  --orange:#fb923c;--orange-dim:rgba(251,146,60,.12);
+  --cyan:#22d3ee;--cyan-dim:rgba(34,211,238,.12);
+  --r:10px;--r-sm:7px;--r-lg:14px;--r-xl:18px;
+  --font-th:'IBM Plex Sans Thai','Outfit',sans-serif;
+  --font-display:'Outfit',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --shadow:0 2px 16px rgba(0,0,0,.35);--shadow-lg:0 8px 40px rgba(0,0,0,.5);
+  --transition:.18s cubic-bezier(.4,0,.2,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font-th);background:var(--bg-0);color:var(--text-1);min-height:100vh;line-height:1.65;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg-1);}
+::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px;}
+
+/* ═══ SETUP SCREEN ═══ */
+#setupScreen{
+  position:fixed;inset:0;z-index:9000;background:var(--bg-0);
+  display:grid;place-items:center;padding:20px;overflow-y:auto;
+}
+.setup-card{
+  background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--r-xl);
+  padding:36px;width:100%;max-width:580px;animation:fadeUp .4s ease;
+}
+.setup-card h1{font-family:var(--font-display);font-size:1.6rem;font-weight:800;margin-bottom:4px;letter-spacing:-.5px;}
+.setup-card .sub{color:var(--text-3);font-size:.88rem;margin-bottom:28px;}
+.setup-step{
+  background:var(--bg-3);border:1px solid var(--border-1);border-radius:var(--r);
+  padding:18px;margin-bottom:14px;
+}
+.setup-step .step-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:7px;
+  background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;
+  margin-right:8px;
+}
+.setup-step h3{font-size:.92rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;}
+.setup-step p{font-size:.82rem;color:var(--text-2);line-height:1.7;}
+.setup-step code{
+  background:var(--bg-4);padding:2px 7px;border-radius:4px;
+  font-family:var(--font-mono);font-size:.78rem;color:var(--cyan);
+}
+.setup-step a{color:var(--accent);text-decoration:underline;}
+.setup-step ol{margin:8px 0 0 20px;font-size:.82rem;color:var(--text-2);line-height:2;}
+.setup-input{
+  margin-top:12px;display:flex;gap:8px;
+}
+.setup-input input{flex:1;}
+.setup-divider{text-align:center;color:var(--text-4);font-size:.78rem;margin:14px 0;position:relative;}
+.setup-divider::before,.setup-divider::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:var(--border-1);}
+.setup-divider::before{left:0;}
+.setup-divider::after{right:0;}
+#signInBtn{
+  width:100%;padding:14px;border:none;border-radius:var(--r);
+  background:linear-gradient(135deg,var(--accent),#7c9aff);color:#fff;
+  font-family:var(--font-th);font-size:1rem;font-weight:700;
+  cursor:pointer;transition:var(--transition);margin-top:8px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+#signInBtn:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--accent-glow);}
+#signInBtn:disabled{opacity:.5;pointer-events:none;}
+.setup-status{
+  text-align:center;padding:12px;border-radius:var(--r-sm);
+  margin-top:14px;font-size:.85rem;font-weight:600;display:none;
+}
+.setup-status.show{display:block;}
+.setup-status.ok{background:var(--green-dim);color:var(--green);}
+.setup-status.err{background:var(--red-dim);color:var(--red);}
+.setup-status.loading{background:var(--accent-dim);color:var(--accent);}
+
+/* ═══ HEADER ═══ */
+.header{position:sticky;top:0;z-index:100;background:rgba(13,15,21,.88);backdrop-filter:blur(24px);border-bottom:1px solid var(--border-1);}
+.header-inner{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:800;font-size:1.05rem;letter-spacing:-.5px;}
+.logo-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--cyan));display:grid;place-items:center;font-size:15px;font-weight:800;color:#fff;box-shadow:0 2px 10px var(--accent-glow);}
+.header-right{display:flex;align-items:center;gap:14px;}
+.user-chip{
+  display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;
+  border-radius:20px;background:var(--bg-3);border:1px solid var(--border-1);
+  font-size:.78rem;color:var(--text-2);
+}
+.user-avatar{width:26px;height:26px;border-radius:50%;background:var(--accent);display:grid;place-items:center;font-size:.7rem;font-weight:700;color:#fff;}
+.conn-status{display:flex;align-items:center;gap:7px;font-size:.72rem;color:var(--text-3);font-family:var(--font-mono);}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ═══ TABS ═══ */
+.tabs{display:flex;gap:3px;padding:10px 20px;max-width:1200px;margin:0 auto;}
+.tab{padding:9px 18px;border:none;border-radius:var(--r-sm);background:transparent;color:var(--text-3);font-family:var(--font-th);font-size:.84rem;font-weight:600;cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:7px;}
+.tab:hover{color:var(--text-2);background:var(--bg-3);}
+.tab.on{color:#fff;background:var(--accent);box-shadow:0 2px 10px var(--accent-glow);}
+.tab .badge{font-size:.65rem;background:var(--bg-3);padding:1px 7px;border-radius:8px;font-family:var(--font-mono);}
+.tab.on .badge{background:rgba(255,255,255,.2);}
+
+/* ═══ MAIN ═══ */
+.main{max-width:1200px;margin:0 auto;padding:0 20px 60px;}
+.sec{display:none;animation:fadeUp .25s ease;}
+.sec.on{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ═══ CARD ═══ */
+.card{background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--r-lg);padding:24px;margin-bottom:16px;transition:var(--transition);}
+.card:hover{border-color:var(--border-2);}
+.card-h{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:var(--text-4);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.card-h::before{content:'';width:3px;height:12px;border-radius:2px;background:var(--accent);}
+
+/* ═══ FORM ═══ */
+.grid{display:grid;gap:14px;}.g2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}.g3{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));}.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}.g5{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}
+.fld{display:flex;flex-direction:column;gap:5px;}
+.fld label{font-size:.75rem;font-weight:600;color:var(--text-3);letter-spacing:.2px;}
+.fld .req{color:var(--red);}
+input,select,textarea{background:var(--bg-3);border:1px solid var(--border-1);border-radius:var(--r-sm);padding:9px 12px;color:var(--text-1);font-family:var(--font-th);font-size:.88rem;transition:var(--transition);outline:none;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px var(--accent-dim);}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%236b7089' d='M5 7L0 2h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+textarea{resize:vertical;min-height:70px;font-size:.82rem;line-height:1.6;}
+input[type=file]{display:none;}
+
+/* ═══ BUTTONS ═══ */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border:none;border-radius:var(--r-sm);font-family:var(--font-th);font-size:.85rem;font-weight:600;cursor:pointer;transition:var(--transition);white-space:nowrap;}
+.btn-p{background:linear-gradient(135deg,var(--accent),#7c9aff);color:#fff;box-shadow:0 2px 10px var(--accent-glow);}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 4px 18px var(--accent-glow);}
+.btn-s{background:var(--bg-3);color:var(--text-1);border:1px solid var(--border-2);}
+.btn-s:hover{border-color:var(--accent);background:var(--bg-4);}
+.btn-d{background:var(--red);color:#fff;}.btn-d:hover{box-shadow:0 4px 16px var(--red-glow);}
+.btn-g{background:var(--green);color:#000;font-weight:700;}.btn-g:hover{box-shadow:0 4px 16px var(--green-glow);}
+.btn-sm{padding:6px 12px;font-size:.78rem;}
+.btn:disabled{opacity:.45;pointer-events:none;}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .5s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══ MENTAL ═══ */
+.mental-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;}
+.mental-item{background:var(--bg-3);border:1px solid var(--border-1);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:7px;}
+.mental-item .mi-head{display:flex;align-items:center;gap:6px;font-size:.82rem;font-weight:600;color:var(--text-2);}
+.mental-item .mi-icon{font-size:1.1rem;}
+
+.score-box{display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;padding:20px;background:var(--bg-3);border:1px solid var(--border-1);border-radius:var(--r);margin-top:14px;}
+.score-circle{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-mono);font-size:1.4rem;font-weight:700;border:3px solid var(--border-2);transition:var(--transition);}
+.score-circle.sc-excellent{border-color:var(--green);color:var(--green);box-shadow:0 0 18px var(--green-glow);}
+.score-circle.sc-good{border-color:var(--green);color:var(--green);box-shadow:0 0 12px var(--green-dim);}
+.score-circle.sc-caution{border-color:var(--amber);color:var(--amber);box-shadow:0 0 12px var(--amber-dim);}
+.score-circle.sc-warning{border-color:var(--orange);color:var(--orange);box-shadow:0 0 12px var(--orange-dim);}
+.score-circle.sc-danger{border-color:var(--red);color:var(--red);box-shadow:0 0 18px var(--red-glow);}
+
+.checklist{display:flex;flex-direction:column;gap:8px;}
+.chk{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--bg-3);border:1px solid var(--border-1);border-radius:var(--r-sm);cursor:pointer;transition:var(--transition);font-size:.85rem;}
+.chk:hover{border-color:var(--border-2);}.chk.done{border-color:var(--green);background:rgba(52,211,153,.04);}
+.chk.highlight-red:not(.done){border-color:var(--red);background:rgba(248,113,113,.04);}
+.chk-box{width:20px;height:20px;border-radius:5px;border:2px solid var(--border-2);display:grid;place-items:center;transition:var(--transition);flex-shrink:0;}
+.chk.done .chk-box{background:var(--green);border-color:var(--green);}
+.chk-box::after{content:'✓';color:#fff;font-size:12px;font-weight:700;opacity:0;transition:var(--transition);}
+.chk.done .chk-box::after{opacity:1;}
+.pass-indicator{padding:14px 18px;border-radius:var(--r-sm);margin-top:12px;font-weight:600;font-size:.9rem;display:flex;align-items:center;gap:8px;}
+.pass-indicator.pass{background:var(--green-dim);color:var(--green);border:1px solid rgba(52,211,153,.2);}
+.pass-indicator.fail{background:var(--red-dim);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+
+/* ═══ LADDER ═══ */
+.ladder-order{display:grid;grid-template-columns:auto 1fr 1fr auto auto;gap:10px;align-items:end;padding:12px;background:var(--bg-3);border:1px solid var(--border-1);border-radius:var(--r-sm);margin-bottom:8px;}
+.ladder-num{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);background:var(--accent-dim);padding:4px 10px;border-radius:4px;white-space:nowrap;align-self:center;}
+.ladder-pct{font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--text-2);align-self:center;text-align:center;min-width:50px;}
+.ladder-total{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:14px;background:var(--bg-4);border:1px solid var(--border-2);border-radius:var(--r-sm);margin-top:4px;}
+.ladder-total .lt-item{text-align:center;}.ladder-total .lt-label{font-size:.68rem;color:var(--text-4);text-transform:uppercase;letter-spacing:1px;font-weight:600;}.ladder-total .lt-val{font-family:var(--font-mono);font-size:1rem;font-weight:700;margin-top:2px;}
+
+.radio-group{display:flex;gap:6px;flex-wrap:wrap;}
+.radio-group label{padding:8px 16px;border-radius:var(--r-sm);border:1px solid var(--border-1);background:var(--bg-3);color:var(--text-2);font-size:.82rem;font-weight:600;cursor:pointer;transition:var(--transition);}
+.radio-group input{display:none;}.radio-group input:checked+label{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+
+.pl-box{text-align:center;padding:18px;border-radius:var(--r);background:var(--bg-3);border:1px solid var(--border-1);}
+.pl-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;}
+.pl-item{text-align:center;}.pl-item .pll{font-size:.68rem;color:var(--text-4);text-transform:uppercase;letter-spacing:1px;font-weight:600;}.pl-item .plv{font-family:var(--font-mono);font-size:1.3rem;font-weight:700;margin-top:2px;}.pl-item .plv.pos{color:var(--green);}.pl-item .plv.neg{color:var(--red);}
+
+.upload-zone{border:2px dashed var(--border-2);border-radius:var(--r);padding:28px;text-align:center;cursor:pointer;transition:var(--transition);position:relative;}
+.upload-zone:hover{border-color:var(--accent);background:var(--accent-dim);}
+.upload-zone.has-file{border-color:var(--green);border-style:solid;}
+.upload-preview{max-width:100%;max-height:180px;border-radius:var(--r-sm);margin-top:10px;}
+
+/* ═══ STATS ═══ */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;}
+.stat{background:var(--bg-2);border:1px solid var(--border-1);border-radius:var(--r);padding:18px;}
+.stat .st-label{font-size:.68rem;font-weight:700;color:var(--text-4);text-transform:uppercase;letter-spacing:1.2px;}
+.stat .st-val{font-family:var(--font-mono);font-size:1.5rem;font-weight:700;margin-top:4px;}
+.stat .st-sub{font-size:.75rem;color:var(--text-3);margin-top:2px;}
+.streak-alert{padding:16px 20px;border-radius:var(--r);margin-bottom:16px;display:flex;align-items:center;gap:12px;font-weight:600;font-size:.88rem;}
+.streak-alert.ready{background:var(--green-dim);color:var(--green);border:1px solid rgba(52,211,153,.15);}
+.streak-alert.paused{background:var(--red-dim);color:var(--red);border:1px solid rgba(248,113,113,.15);}
+
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.8rem;}
+thead th{text-align:left;padding:10px 12px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-4);border-bottom:1px solid var(--border-1);white-space:nowrap;}
+tbody td{padding:10px 12px;border-bottom:1px solid rgba(30,34,49,.5);font-family:var(--font-mono);font-size:.78rem;white-space:nowrap;}
+tbody tr{transition:var(--transition);}tbody tr:hover{background:var(--bg-hover);}
+.tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:600;}
+.tag-long{background:var(--green-dim);color:var(--green);}.tag-short{background:var(--red-dim);color:var(--red);}
+.tag-win{background:var(--green-dim);color:var(--green);}.tag-loss{background:var(--red-dim);color:var(--red);}
+.tag-be{background:var(--amber-dim);color:var(--amber);}.tag-open{background:var(--cyan-dim);color:var(--cyan);}
+
+.toast-box{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px;}
+.toast{padding:12px 18px;border-radius:var(--r-sm);background:var(--bg-2);border:1px solid var(--border-1);box-shadow:var(--shadow-lg);font-size:.82rem;font-weight:500;animation:slideR .25s ease;display:flex;align-items:center;gap:8px;}
+.toast.ok{border-left:3px solid var(--green);}.toast.err{border-left:3px solid var(--red);}.toast.inf{border-left:3px solid var(--accent);}
+@keyframes slideR{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+
+@media(max-width:768px){
+  .tabs{overflow-x:auto;padding:8px 16px;}.tab{padding:8px 12px;font-size:.8rem;}
+  .main{padding:0 14px 40px;}.card{padding:18px;}
+  .mental-grid{grid-template-columns:1fr 1fr;}.stats-row{grid-template-columns:1fr 1fr;}
+  .ladder-order{grid-template-columns:1fr 1fr;gap:8px;}.ladder-num{grid-column:1/-1;}
+  .pl-row{grid-template-columns:1fr;}.header-right{gap:8px;}.user-chip span{display:none;}
+}
+@media(max-width:480px){.mental-grid{grid-template-columns:1fr;}.stats-row{grid-template-columns:1fr;}.score-box{flex-direction:column;gap:12px;}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     SETUP / LOGIN SCREEN
+     ═══════════════════════════════════════════════ -->
+<div id="setupScreen">
+  <div class="setup-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <div class="logo-mark" style="width:40px;height:40px;font-size:18px;">S</div>
+      <h1>Strix Trading Journal</h1>
+    </div>
+    <div class="sub">Personal Online Trading Journal — ใช้งานได้จากทุกอุปกรณ์</div>
+
+    <!-- Step 1: Client ID -->
+    <div class="setup-step" id="setupStep1">
+      <h3><span class="step-num">1</span> สร้าง Google OAuth Client ID <span style="font-size:.72rem;color:var(--text-3);margin-left:auto">(ครั้งเดียว)</span></h3>
+      <p>เข้าไปที่ <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a> แล้วทำตามนี้:</p>
+      <ol>
+        <li>สร้าง Project ใหม่ (ชื่ออะไรก็ได้ เช่น "Trading Journal")</li>
+        <li>ไปที่ <b>APIs & Services → Library</b> → เปิดใช้ <code>Google Sheets API</code> และ <code>Google Drive API</code></li>
+        <li>ไปที่ <b>APIs & Services → Credentials</b> → Create Credentials → <b>OAuth client ID</b></li>
+        <li>Application type: <b>Web application</b></li>
+        <li>Authorized JavaScript origins: ใส่ URL ที่คุณเปิดไฟล์นี้<br>
+          เช่น <code>https://yourname.github.io</code> หรือ <code>http://localhost:8080</code></li>
+        <li>ไปที่ <b>OAuth consent screen</b> → เพิ่ม email ของคุณเป็น <b>Test user</b></li>
+        <li>Copy <b>Client ID</b> มาวางด้านล่าง</li>
+      </ol>
+      <div class="setup-input">
+        <input type="text" id="inputClientId" placeholder="xxxxxx.apps.googleusercontent.com" style="font-family:var(--font-mono);font-size:.82rem;">
+      </div>
+    </div>
+
+    <!-- Sign In Button -->
+    <button id="signInBtn" onclick="startSignIn()">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Sign in with Google
+    </button>
+
+    <div class="setup-status" id="setupStatus"></div>
+
+    <!-- Step 2: After sign-in — Sheet/Folder setup -->
+    <div id="setupStep2" style="display:none;margin-top:16px;">
+      <div class="setup-step">
+        <h3><span class="step-num">2</span> ตั้งค่า Google Sheet</h3>
+        <p>สร้าง Sheet ใหม่อัตโนมัติ หรือใส่ Sheet ID ที่มีอยู่แล้ว</p>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <button class="btn btn-p btn-sm" onclick="autoCreateSheet()">📊 สร้าง Sheet ใหม่อัตโนมัติ</button>
+          <span style="align-self:center;color:var(--text-4);font-size:.82rem">หรือ</span>
+          <input type="text" id="inputSheetId" placeholder="Sheet ID ที่มีอยู่" style="flex:1;min-width:180px;font-family:var(--font-mono);font-size:.78rem;">
+        </div>
+      </div>
+      <div class="setup-step">
+        <h3><span class="step-num">3</span> ตั้งค่า Google Drive Folder</h3>
+        <p>สร้าง Folder ใหม่สำหรับเก็บ chart หรือใส่ Folder ID</p>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <button class="btn btn-p btn-sm" onclick="autoCreateFolder()">📁 สร้าง Folder อัตโนมัติ</button>
+          <span style="align-self:center;color:var(--text-4);font-size:.82rem">หรือ</span>
+          <input type="text" id="inputFolderId" placeholder="Folder ID ที่มีอยู่" style="flex:1;min-width:180px;font-family:var(--font-mono);font-size:.78rem;">
+        </div>
+      </div>
+      <button class="btn btn-g" style="width:100%;margin-top:14px;justify-content:center;" onclick="finishSetup()">✅ เริ่มใช้งาน</button>
+    </div>
+
+    <!-- Returning user: Quick sign-in -->
+    <div id="quickSignIn" style="display:none;margin-top:16px;text-align:center;">
+      <div class="setup-divider">หรือ</div>
+      <p style="font-size:.82rem;color:var(--text-2);margin-bottom:10px">คุณเคยตั้งค่าไว้แล้ว — กด Sign In เพื่อเข้าใช้งาน</p>
+    </div>
+
+    <!-- Settings link -->
+    <div style="text-align:center;margin-top:20px;">
+      <button class="btn btn-s btn-sm" onclick="resetSetup()" style="font-size:.75rem">🔄 Reset Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     APP (hidden until signed in)
+     ═══════════════════════════════════════════════ -->
+<div id="appContainer" style="display:none">
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo"><div class="logo-mark">S</div>Strix Journal</div>
+    <div class="header-right">
+      <div class="user-chip"><div class="user-avatar" id="userAvatar">?</div><span id="userName"></span></div>
+      <button class="btn btn-s btn-sm" onclick="signOut()" title="Sign Out">↗</button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab on" data-t="pretrade">🧠 Pre-Trade</button>
+  <button class="tab" data-t="entry">📝 Trade Entry <span class="badge" id="editBadge" style="display:none">EDIT</span></button>
+  <button class="tab" data-t="stats">📊 Statistics <span class="badge" id="tradeBadge">0</span></button>
+</nav>
+
+<main class="main">
+
+<!-- ═══ SECTION 1: PRE-TRADE ═══ -->
+<div class="sec on" id="s-pretrade">
+  <div class="card">
+    <div class="card-h">Mental Check — ประเมินจิตใจก่อนเทรด</div>
+    <div class="mental-grid">
+      <div class="mental-item"><div class="mi-head"><span class="mi-icon">🌊</span>Emotional State</div><select id="m1" onchange="calcScore()"><option value="0">— เลือก —</option><option value="5">5 — สงบสุข 100%</option><option value="4">4 — สงบดี</option><option value="3">3 — ปกติ</option><option value="2">2 — กังวลเล็กน้อย</option><option value="1">1 — ไม่สงบ ไม่ควรเทรด</option></select></div>
+      <div class="mental-item"><div class="mi-head"><span class="mi-icon">🎯</span>Setup Confidence</div><select id="m2" onchange="calcScore()"><option value="0">— เลือก —</option><option value="5">5 — มั่นใจ 100%</option><option value="4">4 — มั่นใจดี</option><option value="3">3 — ปานกลาง</option><option value="2">2 — ไม่ค่อยมั่นใจ</option><option value="1">1 — ไม่มั่นใจเลย</option></select></div>
+      <div class="mental-item"><div class="mi-head"><span class="mi-icon">⚖️</span>Risk Acceptance</div><select id="m3" onchange="calcScore()"><option value="0">— เลือก —</option><option value="5">5 — ยอมรับเต็มที่</option><option value="4">4 — ยอมรับสบายใจ</option><option value="3">3 — ยอมรับได้</option><option value="2">2 — กลัวเงินหาย</option><option value="1">1 — รับไม่ได้</option></select></div>
+      <div class="mental-item"><div class="mi-head"><span class="mi-icon">🦅</span>Objectivity</div><select id="m4" onchange="calcScore()"><option value="0">— เลือก —</option><option value="5">5 — มองตลาดตามจริง</option><option value="4">4 — มองค่อนข้างตรง</option><option value="3">3 — เบี่ยงเบนบ้าง</option><option value="2">2 — มีอคติ</option><option value="1">1 — มองผิดไปหมด</option></select></div>
+      <div class="mental-item"><div class="mi-head"><span class="mi-icon">🔋</span>Energy Level</div><select id="m5" onchange="calcScore()"><option value="0">— เลือก —</option><option value="5">5 — พลังเต็ม 100%</option><option value="4">4 — พลังดี</option><option value="3">3 — พอใช้</option><option value="2">2 — เหนื่อยมาก</option><option value="1">1 — หมดแรง</option></select></div>
+    </div>
+    <div class="score-box">
+      <div><div class="score-circle" id="scoreCircle">0</div><div style="text-align:center;margin-top:5px;font-size:.72rem;color:var(--text-3)">out of 25</div></div>
+      <div style="text-align:center"><div style="font-size:.82rem;font-weight:600" id="scoreLevelText">—</div><div style="font-size:.72rem;color:var(--text-3);margin-top:2px" id="scoreSubText">เลือกให้ครบ 5 ข้อ</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h">Pre-Trade Checklist — ต้องผ่านครบ 5 ข้อ</div>
+    <div class="checklist" id="checklistBox">
+      <div class="chk" onclick="toggleChk(this)"><div class="chk-box"></div><span>1. นั่งสมาธิ/หายใจลึก 5 นาที</span></div>
+      <div class="chk" onclick="toggleChk(this)"><div class="chk-box"></div><span>2. Setup ตรง 100% + อธิบายได้ใน 1 ประโยค</span></div>
+      <div class="chk" onclick="toggleChk(this)"><div class="chk-box"></div><span>3. R:R ≥ 1:2 + SL/TP ตามโครงสร้างจริง</span></div>
+      <div class="chk" onclick="toggleChk(this)"><div class="chk-box"></div><span>4. Risk ไม่เกิน 2% Portfolio (รวมทุก position)</span></div>
+      <div class="chk highlight-red" onclick="toggleChk(this)"><div class="chk-box"></div><span>5. ไม่ได้แพ้ครั้งก่อนภายใน 2 ชม. <span style="color:var(--red);font-weight:700">⭐</span></span></div>
+    </div>
+    <div class="pass-indicator fail" id="passIndicator">🛑 ห้ามเปิดเทรด! ต้องผ่านครบ 5 ข้อ (ขาดอีก 5 ข้อ)</div>
+  </div>
+  <div style="text-align:center;padding:8px 0"><button class="btn btn-p" id="proceedBtn" disabled onclick="goTab('entry')">ไปหน้า Trade Entry →</button></div>
+</div>
+
+<!-- ═══ SECTION 2: TRADE ENTRY ═══ -->
+<div class="sec" id="s-entry">
+  <div class="card"><div class="card-h">Trade Information</div><div class="grid g4"><div class="fld"><label>Date <span class="req">*</span></label><input type="date" id="t-date"></div><div class="fld"><label>Time</label><input type="time" id="t-time"></div><div class="fld"><label>Pair <span class="req">*</span></label><input type="text" id="t-pair" placeholder="BTC/USDT" oninput="this.value=this.value.toUpperCase()"></div><div class="fld"><label>Direction <span class="req">*</span></label><select id="t-dir"><option value="">— เลือก —</option><option value="LONG">🟢 LONG</option><option value="SHORT">🔴 SHORT</option></select></div></div></div>
+
+  <div class="card"><div class="card-h">Market Analysis</div><div class="grid g3"><div class="fld"><label>Trend</label><select id="t-trend"><option value="">—</option><option value="Uptrend">Uptrend</option><option value="Downtrend">Downtrend</option><option value="Ranging">Ranging</option></select></div><div class="fld"><label>Structure</label><select id="t-struct"><option value="">—</option><option value="BOS">BOS</option><option value="CHoCH">CHoCH</option><option value="None">None</option></select></div></div><div class="fld" style="margin-top:12px"><label>Entry Reason</label><textarea id="t-reason" placeholder="เหตุผลในการเข้าเทรด..."></textarea></div></div>
+
+  <div class="card"><div class="card-h">Entry Orders — Ladder</div><div id="ladderBox"><div class="ladder-order" data-idx="0"><span class="ladder-num">Order 1</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)" style="display:none">✕</button></div></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-s btn-sm" id="addOrderBtn" onclick="addOrder()">+ Add Order</button></div><div class="ladder-total" id="ladderTotal"><div class="lt-item"><div class="lt-label">Total Capital</div><div class="lt-val" id="totalCap">$0</div></div><div class="lt-item"><div class="lt-label">Total Size</div><div class="lt-val" id="totalPct">0%</div></div><div class="lt-item"><div class="lt-label">Risk Check</div><div class="lt-val" id="riskCheck" style="color:var(--text-3)">—</div></div></div></div>
+
+  <div class="card"><div class="card-h">Risk Management</div><div class="grid g3"><div class="fld"><label>Stop Loss <span class="req">*</span></label><input type="number" step="any" id="t-sl" oninput="calcAll()"></div><div class="fld"><label>Take Profit</label><input type="number" step="any" id="t-tp" oninput="calcAll()"></div></div></div>
+
+  <div class="card"><div class="card-h">Outcome</div><div class="grid g3"><div class="fld"><label>Exit Type</label><div class="radio-group"><input type="radio" name="exitType" id="ext-plan" value="Plan"><label for="ext-plan">Plan</label><input type="radio" name="exitType" id="ext-evolve" value="Evolving"><label for="ext-evolve">Evolving</label></div></div><div class="fld"><label>Exit Price</label><input type="number" step="any" id="t-exit" oninput="calcAll()"></div><div class="fld"><label>Exit Time</label><input type="time" id="t-exitTime"></div></div><div class="grid g3" style="margin-top:12px"><div class="fld"><label>Result</label><select id="t-result" onchange="onResultChange()"><option value="Open">Open</option><option value="Win">Win</option><option value="Loss">Loss</option><option value="Breakeven">Breakeven</option></select></div><div class="fld" id="lossTypeBox" style="display:none"><label>Loss Type</label><div class="radio-group"><input type="radio" name="lossType" id="lt-good" value="Good"><label for="lt-good">Good Loss</label><input type="radio" name="lossType" id="lt-bad" value="Bad"><label for="lt-bad">Bad Loss</label></div></div></div><div class="pl-box" style="margin-top:14px"><div style="font-size:.72rem;color:var(--text-4);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px">Realized P/L</div><div class="pl-row"><div class="pl-item"><div class="pll">P/L $</div><div class="plv" id="plDollar">0.00</div></div><div class="pl-item"><div class="pll">P/L %</div><div class="plv" id="plPercent">0.00%</div></div><div class="pl-item"><div class="pll">R-Multiple</div><div class="plv" id="plR">0.00R</div></div></div></div></div>
+
+  <div class="card"><div class="card-h">Chart Screenshot</div><div class="upload-zone" id="uploadZone" onclick="document.getElementById('chartInput').click()"><input type="file" accept="image/*" id="chartInput" onchange="onFileSelect(event)"><div style="font-size:1.8rem">📸</div><div style="font-size:.82rem;color:var(--text-2);margin-top:4px">Click to upload chart screenshot</div><div style="font-size:.72rem;color:var(--text-4);margin-top:2px">จะถูกบันทึกไปยัง Google Drive อัตโนมัติ</div><img class="upload-preview" id="chartPreview" style="display:none"></div></div>
+
+  <div class="card"><div class="card-h">Lessons Learned</div><div class="fld" style="margin-bottom:12px"><label>What Went Right ✅</label><textarea id="t-right" placeholder="สิ่งที่ทำได้ดี..."></textarea></div><div class="fld" style="margin-bottom:12px"><label>What Went Wrong ❌</label><textarea id="t-wrong" placeholder="สิ่งที่ผิดพลาด..."></textarea></div><div class="fld"><label>Improvement 🔧</label><textarea id="t-improve" placeholder="จะปรับปรุงอะไร..."></textarea></div></div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;padding:6px 0"><button class="btn btn-g" id="saveBtn" onclick="saveTrade()">💾 SAVE TRADE</button><button class="btn btn-s" id="cancelEditBtn" style="display:none" onclick="cancelEdit()">✕ Cancel Edit</button><button class="btn btn-s" onclick="clearForm()">🗑 Clear</button></div>
+</div>
+
+<!-- ═══ SECTION 3: STATISTICS ═══ -->
+<div class="sec" id="s-stats">
+  <div class="streak-alert ready" id="streakAlert"><span class="streak-icon">✅</span><span id="streakAlertText">Ready — พร้อมเทรดได้</span></div>
+  <div class="stats-row"><div class="stat"><div class="st-label">Total Trades</div><div class="st-val" id="st-total">0</div></div><div class="stat"><div class="st-label">Win Rate</div><div class="st-val" id="st-wr">0%</div><div class="st-sub" id="st-wl">0W / 0L</div></div><div class="stat"><div class="st-label">Total P/L</div><div class="st-val" id="st-pl">$0.00</div></div><div class="stat"><div class="st-label">Avg Mental</div><div class="st-val" id="st-mental">0</div><div class="st-sub">out of 25</div></div></div>
+  <div class="stats-row"><div class="stat"><div class="st-label">WR (Mental ≥18)</div><div class="st-val" id="st-wrHigh">—</div></div><div class="stat"><div class="st-label">WR (Mental &lt;18)</div><div class="st-val" id="st-wrLow">—</div></div><div class="stat"><div class="st-label">Good Loss Streak</div><div class="st-val" id="st-goodStreak">0</div></div><div class="stat"><div class="st-label">Bad Loss Streak</div><div class="st-val" id="st-badStreak">0</div></div><div class="stat"><div class="st-label">Position Size</div><div class="st-val" id="st-posSize">100%</div></div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><button class="btn btn-p" onclick="goTab('pretrade')">🆕 New Trade</button><button class="btn btn-s" onclick="exportExcel()">📥 Export Excel</button><button class="btn btn-s" onclick="loadFromSheet()">🔄 Refresh</button></div>
+  <div class="card" style="padding:14px"><div class="card-h" style="margin-bottom:12px">Recent Trades</div><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Date</th><th>Pair</th><th>Dir</th><th>Result</th><th>Mental</th><th>P/L</th><th>Chart</th><th>Action</th></tr></thead><tbody id="tBody"><tr><td colspan="9" style="text-align:center;padding:36px;color:var(--text-4)">No trades yet</td></tr></tbody></table></div></div>
+</div>
+
+</main>
+</div>
+
+<div class="toast-box" id="toastBox"></div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  AUTH & CONFIG — Google OAuth 2.0                            ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+let accessToken = null;
+let tokenClient = null;
+let userEmail = '';
+
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
+const SHEET_HEADERS = ['ID','Date','Time','Pair','Direction','Entry1','Entry2','Entry3','TotalCapital','Risk%','SL','TP','ExitPrice','ExitTime','Result','LossType','P/L $','P/L %','R-Multiple','MentalScore','Calm','Confidence','Risk','Objectivity','Energy','Checklist','Trend','Structure','EntryReason','ExitType','WentRight','WentWrong','Improvement','ChartURL','CreatedAt','UpdatedAt'];
+
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem('strix_config')) || {}; } catch(e) { return {}; }
+}
+function saveConfig(c) { localStorage.setItem('strix_config', JSON.stringify(c)); }
+
+// Check if returning user
+function initSetup() {
+  const cfg = getConfig();
+  if (cfg.clientId) {
+    document.getElementById('inputClientId').value = cfg.clientId;
+    document.getElementById('quickSignIn').style.display = 'block';
+    if (cfg.sheetId) document.getElementById('inputSheetId').value = cfg.sheetId;
+    if (cfg.folderId) document.getElementById('inputFolderId').value = cfg.folderId;
+  }
+}
+
+function showSetupStatus(msg, type) {
+  const el = document.getElementById('setupStatus');
+  el.textContent = msg;
+  el.className = 'setup-status show ' + type;
+}
+
+function startSignIn() {
+  const clientId = document.getElementById('inputClientId').value.trim();
+  if (!clientId || !clientId.includes('.apps.googleusercontent.com')) {
+    showSetupStatus('กรุณาใส่ Client ID ให้ถูกต้อง (ลงท้ายด้วย .apps.googleusercontent.com)', 'err');
+    return;
+  }
+
+  const cfg = getConfig();
+  cfg.clientId = clientId;
+  saveConfig(cfg);
+
+  showSetupStatus('กำลังเชื่อมต่อ Google...', 'loading');
+  document.getElementById('signInBtn').disabled = true;
+
+  try {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: SCOPES,
+      callback: handleTokenResponse,
+    });
+    tokenClient.requestAccessToken();
+  } catch(e) {
+    showSetupStatus('Error initializing Google: ' + e.message, 'err');
+    document.getElementById('signInBtn').disabled = false;
+  }
+}
+
+async function handleTokenResponse(resp) {
+  document.getElementById('signInBtn').disabled = false;
+  if (resp.error) {
+    showSetupStatus('Sign in failed: ' + (resp.error_description || resp.error), 'err');
+    return;
+  }
+  accessToken = resp.access_token;
+
+  // Get user info
+  try {
+    const res = await gfetch('https://www.googleapis.com/oauth2/v2/userinfo');
+    const info = await res.json();
+    userEmail = info.email || '';
+    showSetupStatus(`✅ Signed in as ${userEmail}`, 'ok');
+  } catch(e) {
+    showSetupStatus('✅ Signed in (could not get email)', 'ok');
+  }
+
+  // Check if have sheet+folder already
+  const cfg = getConfig();
+  if (cfg.sheetId && cfg.folderId) {
+    // Returning user — go straight to app
+    setTimeout(() => launchApp(), 500);
+  } else {
+    // New user — show step 2
+    document.getElementById('setupStep2').style.display = 'block';
+  }
+}
+
+// Auth-wrapped fetch
+function gfetch(url, opts = {}) {
+  if (!opts.headers) opts.headers = {};
+  opts.headers['Authorization'] = 'Bearer ' + accessToken;
+  return fetch(url, opts);
+}
+
+async function autoCreateSheet() {
+  showSetupStatus('กำลังสร้าง Google Sheet...', 'loading');
+  try {
+    const res = await gfetch('https://sheets.googleapis.com/v4/spreadsheets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        properties: { title: 'Strix Trading Journal' },
+        sheets: [{ properties: { title: 'Trades' } }]
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || res.status);
+    const sheetId = data.spreadsheetId;
+    document.getElementById('inputSheetId').value = sheetId;
+
+    // Add headers
+    await gfetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Trades!A1:AJ1?valueInputOption=USER_ENTERED`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: [SHEET_HEADERS] })
+    });
+
+    // Format header row bold
+    await gfetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: [{
+        repeatCell: {
+          range: { sheetId: 0, startRowIndex: 0, endRowIndex: 1 },
+          cell: { userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red:.1, green:.1, blue:.15 } } },
+          fields: 'userEnteredFormat(textFormat,backgroundColor)'
+        }
+      }]})
+    });
+
+    showSetupStatus('✅ Sheet สร้างเรียบร้อย!', 'ok');
+    const cfg = getConfig(); cfg.sheetId = sheetId; saveConfig(cfg);
+  } catch(e) {
+    showSetupStatus('❌ สร้าง Sheet ไม่สำเร็จ: ' + e.message, 'err');
+  }
+}
+
+async function autoCreateFolder() {
+  showSetupStatus('กำลังสร้าง Drive Folder...', 'loading');
+  try {
+    const res = await gfetch('https://www.googleapis.com/drive/v3/files', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Strix Journal Charts', mimeType: 'application/vnd.google-apps.folder' })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || res.status);
+    document.getElementById('inputFolderId').value = data.id;
+    showSetupStatus('✅ Folder สร้างเรียบร้อย!', 'ok');
+    const cfg = getConfig(); cfg.folderId = data.id; saveConfig(cfg);
+  } catch(e) {
+    showSetupStatus('❌ สร้าง Folder ไม่สำเร็จ: ' + e.message, 'err');
+  }
+}
+
+function finishSetup() {
+  const cfg = getConfig();
+  const sid = document.getElementById('inputSheetId').value.trim();
+  const fid = document.getElementById('inputFolderId').value.trim();
+  if (!sid) { showSetupStatus('กรุณาสร้างหรือใส่ Sheet ID','err'); return; }
+  if (!fid) { showSetupStatus('กรุณาสร้างหรือใส่ Folder ID','err'); return; }
+  cfg.sheetId = sid;
+  cfg.folderId = fid;
+  saveConfig(cfg);
+  launchApp();
+}
+
+function launchApp() {
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('appContainer').style.display = 'block';
+  const initial = userEmail ? userEmail.charAt(0).toUpperCase() : '?';
+  document.getElementById('userAvatar').textContent = initial;
+  document.getElementById('userName').textContent = userEmail.split('@')[0] || 'User';
+  const n = new Date();
+  document.getElementById('t-date').value = n.toISOString().split('T')[0];
+  document.getElementById('t-time').value = n.toTimeString().slice(0,5);
+  loadFromSheet();
+  // Auto-refresh token before expiry (45 min)
+  setInterval(() => { if (tokenClient) tokenClient.requestAccessToken({prompt:''}); }, 45*60*1000);
+}
+
+function signOut() {
+  if (accessToken) google.accounts.oauth2.revoke(accessToken);
+  accessToken = null;
+  document.getElementById('appContainer').style.display = 'none';
+  document.getElementById('setupScreen').style.display = 'grid';
+  showSetupStatus('Signed out','inf');
+}
+
+function resetSetup() {
+  if (confirm('จะลบ settings ทั้งหมดออก ต้อง setup ใหม่ ยืนยัน?')) {
+    localStorage.removeItem('strix_config');
+    location.reload();
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  TAB NAVIGATION
+// ══════════════════════════════════════════════════════════
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>goTab(t.dataset.t)));
+function goTab(id){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===id));document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));document.getElementById('s-'+id).classList.add('on');if(id==='stats')refreshStats();if(id==='entry'){if(!document.getElementById('t-date').value){const n=new Date();document.getElementById('t-date').value=n.toISOString().split('T')[0];document.getElementById('t-time').value=n.toTimeString().slice(0,5);}}}
+
+// ══════════════════════════════════════════════════════════
+//  SECTION 1: PRE-TRADE
+// ══════════════════════════════════════════════════════════
+function calcScore(){const ids=['m1','m2','m3','m4','m5'];let total=0,filled=0;ids.forEach(id=>{const v=+document.getElementById(id).value;if(v>0){total+=v;filled++;}});const c=document.getElementById('scoreCircle');const lt=document.getElementById('scoreLevelText');const st=document.getElementById('scoreSubText');c.textContent=total;c.className='score-circle';if(filled<5){st.textContent=`เลือกให้ครบ 5 ข้อ (${filled}/5)`;lt.textContent='—';updateProceed();return;}let cls,label;if(total>=23){cls='sc-excellent';label='🟢 Excellent';}else if(total>=18){cls='sc-good';label='🟢 Good';}else if(total>=13){cls='sc-caution';label='🟡 Caution';}else if(total>=8){cls='sc-warning';label='🟠 Warning';}else{cls='sc-danger';label='🔴 Danger';}c.classList.add(cls);lt.textContent=label;lt.style.color=getComputedStyle(c).color;st.textContent=total>=18?'จิตใจพร้อมเทรด':total>=13?'ระวัง — ลด position size':'ไม่ควรเทรดตอนนี้';updateProceed();}
+function getMentalTotal(){let t=0;['m1','m2','m3','m4','m5'].forEach(id=>t+=(+document.getElementById(id).value||0));return t;}
+function getMentalValues(){return['m1','m2','m3','m4','m5'].map(id=>+document.getElementById(id).value||0);}
+function toggleChk(el){el.classList.toggle('done');updateChecklist();}
+function updateChecklist(){const done=document.querySelectorAll('#checklistBox .chk.done').length;const missing=5-done;const ind=document.getElementById('passIndicator');if(done===5){ind.className='pass-indicator pass';ind.textContent='✅ ผ่าน Checklist! สามารถเปิดเทรดได้';}else{ind.className='pass-indicator fail';ind.textContent=`🛑 ห้ามเปิดเทรด! ต้องผ่านครบ 5 ข้อ (ขาดอีก ${missing} ข้อ)`;}updateProceed();}
+function updateProceed(){document.getElementById('proceedBtn').disabled=document.querySelectorAll('#checklistBox .chk.done').length!==5;}
+
+// ══════════════════════════════════════════════════════════
+//  SECTION 2: TRADE ENTRY
+// ══════════════════════════════════════════════════════════
+let trades=[];let editRowIdx=null;let chartFile=null;let orderCount=1;
+
+function addOrder(){if(orderCount>=3)return;orderCount++;const box=document.getElementById('ladderBox');const div=document.createElement('div');div.className='ladder-order';div.dataset.idx=orderCount-1;div.innerHTML=`<span class="ladder-num">Order ${orderCount}</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)">✕</button>`;box.appendChild(div);if(orderCount>=3)document.getElementById('addOrderBtn').disabled=true;box.querySelectorAll('.lo-rm').forEach(b=>b.style.display=orderCount>1?'':'none');calcAll();}
+function rmOrder(btn){btn.closest('.ladder-order').remove();orderCount--;document.getElementById('addOrderBtn').disabled=false;document.querySelectorAll('.ladder-order').forEach((r,i)=>{r.dataset.idx=i;r.querySelector('.ladder-num').textContent='Order '+(i+1);});document.getElementById('ladderBox').querySelectorAll('.lo-rm').forEach(b=>b.style.display=orderCount>1?'':'none');calcAll();}
+
+function calcAll(){const rows=document.querySelectorAll('.ladder-order');let totalCap=0;const caps=[];rows.forEach(r=>{const c=parseFloat(r.querySelector('.lo-cap')?.value)||0;caps.push(c);totalCap+=c;});rows.forEach((r,i)=>r.querySelector('.lo-pct').textContent=totalCap>0?((caps[i]/totalCap)*100).toFixed(0)+'%':'0%');document.getElementById('totalCap').textContent='$'+totalCap.toFixed(2);document.getElementById('totalPct').textContent='100%';const avg=getAvgEntry();const sl=parseFloat(document.getElementById('t-sl').value)||0;const riskEl=document.getElementById('riskCheck');if(avg>0&&sl>0&&totalCap>0){const rp=Math.abs(avg-sl)/avg*100;riskEl.textContent=rp.toFixed(1)+'% '+(rp<=2?'✅':'⚠️');riskEl.style.color=rp<=2?'var(--green)':'var(--red)';}else{riskEl.textContent='—';riskEl.style.color='var(--text-3)';}calcPL();}
+
+function getAvgEntry(){const rows=document.querySelectorAll('.ladder-order');let tc=0,tq=0;rows.forEach(r=>{const p=parseFloat(r.querySelector('.lo-price')?.value)||0;const c=parseFloat(r.querySelector('.lo-cap')?.value)||0;if(p>0&&c>0){tc+=c;tq+=c/p;}});return tq>0?tc/tq:0;}
+function getTotalCap(){let t=0;document.querySelectorAll('.lo-cap').forEach(el=>t+=parseFloat(el.value)||0);return t;}
+
+function calcPL(){const avg=getAvgEntry();const exitP=parseFloat(document.getElementById('t-exit').value)||0;const dir=document.getElementById('t-dir').value;const totalCap=getTotalCap();const sl=parseFloat(document.getElementById('t-sl').value)||0;const pD=document.getElementById('plDollar'),pP=document.getElementById('plPercent'),pR=document.getElementById('plR');if(!avg||!exitP||!dir){pD.textContent='0.00';pD.className='plv';pP.textContent='0.00%';pP.className='plv';pR.textContent='0.00R';pR.className='plv';return;}let tq=0;document.querySelectorAll('.ladder-order').forEach(r=>{const p=parseFloat(r.querySelector('.lo-price')?.value)||0;const c=parseFloat(r.querySelector('.lo-cap')?.value)||0;if(p>0&&c>0)tq+=c/p;});const m=dir==='LONG'?1:-1;const plD=(exitP-avg)*m*tq;const plPct=totalCap>0?(plD/totalCap)*100:0;let rD=0;if(sl>0)rD=Math.abs(avg-sl)*tq;const rM=rD>0?plD/rD:0;const cls=v=>v>0.01?'plv pos':v<-0.01?'plv neg':'plv';pD.textContent=(plD>=0?'+':'')+plD.toFixed(2);pD.className=cls(plD);pP.textContent=(plPct>=0?'+':'')+plPct.toFixed(2)+'%';pP.className=cls(plPct);pR.textContent=(rM>=0?'+':'')+rM.toFixed(2)+'R';pR.className=cls(rM);const rs=document.getElementById('t-result');if(rs.value==='Open'){if(plD>0.5)rs.value='Win';else if(plD<-0.5)rs.value='Loss';else rs.value='Breakeven';onResultChange();}}
+
+function onResultChange(){document.getElementById('lossTypeBox').style.display=document.getElementById('t-result').value==='Loss'?'':'none';}
+function onFileSelect(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{chartFile={name:f.name,type:f.type,base64:ev.target.result.split(',')[1]};const prev=document.getElementById('chartPreview');prev.src=ev.target.result;prev.style.display='block';document.getElementById('uploadZone').classList.add('has-file');};r.readAsDataURL(f);}
+
+// ─── GOOGLE API CALLS (with OAuth token) ───
+async function uploadDrive(fd,pair,dateStr){
+  const cfg=getConfig();
+  const name=`${Date.now()}_${pair.replace(/[^a-zA-Z0-9]/g,'')}_${dateStr.replace(/[^0-9]/g,'')}.png`;
+  const meta={name,mimeType:fd.type,parents:[cfg.folderId]};
+  const boundary='strix'+Date.now();
+  const body=`--${boundary}\r\nContent-Type:application/json;charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type:${fd.type}\r\nContent-Transfer-Encoding:base64\r\n\r\n${fd.base64}\r\n--${boundary}--`;
+  const res=await gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{'Content-Type':`multipart/related; boundary=${boundary}`},body});
+  if(!res.ok)throw new Error('Drive upload: '+res.status);
+  const data=await res.json();
+  // Set anyone-with-link can view
+  try{await gfetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role:'reader',type:'anyone'})});}catch(e){}
+  return`https://drive.google.com/file/d/${data.id}/view`;
+}
+
+async function sheetAppend(row){const cfg=getConfig();const url=`https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}/values/Trades!A:A:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;const res=await gfetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});if(!res.ok)throw new Error('Append: '+res.status);return res.json();}
+async function sheetUpdate(ri,row){const cfg=getConfig();const range=`Trades!A${ri}:AJ${ri}`;const url=`https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}/values/${range}?valueInputOption=USER_ENTERED`;const res=await gfetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});if(!res.ok)throw new Error('Update: '+res.status);return res.json();}
+async function sheetRead(){const cfg=getConfig();const url=`https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}/values/Trades!A2:AJ1000`;const res=await gfetch(url);if(!res.ok)throw new Error('Read: '+res.status);const d=await res.json();return d.values||[];}
+
+function getEntryPrices(){const p=[];document.querySelectorAll('.lo-price').forEach(el=>p.push(el.value||''));while(p.length<3)p.push('');return p;}
+function formatDMY(iso){if(!iso)return'';const[y,m,d]=iso.split('-');return`${d}/${m}/${y}`;}
+function parseDMY(dmy){if(!dmy)return'';if(dmy.includes('-'))return dmy;const p=dmy.split('/');if(p.length===3)return`${p[2]}-${p[1]}-${p[0]}`;return dmy;}
+
+async function saveTrade(){
+  const pair=document.getElementById('t-pair').value.trim();const dir=document.getElementById('t-dir').value;const date=document.getElementById('t-date').value;
+  if(!pair||!dir||!date){toast('กรุณากรอก Date, Pair, Direction','err');return;}
+  if(!accessToken){toast('กรุณา Sign In ก่อน','err');return;}
+  const btn=document.getElementById('saveBtn');btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Saving...';
+  try{
+    let chartUrl='';if(chartFile){toast('Uploading chart...','inf');chartUrl=await uploadDrive(chartFile,pair,date);}
+    const plD=parseFloat(document.getElementById('plDollar').textContent)||0;const plP=parseFloat(document.getElementById('plPercent').textContent)||0;const plR=parseFloat(document.getElementById('plR').textContent)||0;
+    const entries=getEntryPrices();const mv=getMentalValues();const etEl=document.querySelector('input[name="exitType"]:checked');const ltEl=document.querySelector('input[name="lossType"]:checked');const now=new Date().toISOString();
+    const row=[Date.now().toString(),formatDMY(date),document.getElementById('t-time').value,pair,dir,entries[0],entries[1],entries[2],getTotalCap().toFixed(2),'',document.getElementById('t-sl').value,document.getElementById('t-tp').value,document.getElementById('t-exit').value,document.getElementById('t-exitTime').value,document.getElementById('t-result').value,ltEl?ltEl.value:'-',plD.toFixed(2),plP.toFixed(2),plR.toFixed(2),getMentalTotal().toString(),mv[0].toString(),mv[1].toString(),mv[2].toString(),mv[3].toString(),mv[4].toString(),document.querySelectorAll('#checklistBox .chk.done').length.toString(),document.getElementById('t-trend').value,document.getElementById('t-struct').value,document.getElementById('t-reason').value,etEl?etEl.value:'',document.getElementById('t-right').value,document.getElementById('t-wrong').value,document.getElementById('t-improve').value,chartUrl,editRowIdx?'':now,editRowIdx?now:''];
+    if(editRowIdx!==null){await sheetUpdate(editRowIdx,row);toast('✅ Trade updated!','ok');}else{await sheetAppend(row);toast('✅ Trade saved!','ok');}
+    clearForm();cancelEdit();await loadFromSheet();
+  }catch(err){console.error(err);toast('Error: '+err.message,'err');}
+  btn.disabled=false;btn.innerHTML=editRowIdx!==null?'✏️ UPDATE TRADE':'💾 SAVE TRADE';
+}
+
+function clearForm(){['t-date','t-time','t-pair','t-dir','t-trend','t-struct','t-reason','t-sl','t-tp','t-exit','t-exitTime','t-right','t-wrong','t-improve'].forEach(id=>{const el=document.getElementById(id);if(el.tagName==='SELECT')el.selectedIndex=0;else el.value='';});document.getElementById('t-result').value='Open';onResultChange();document.querySelectorAll('input[name="exitType"],input[name="lossType"]').forEach(r=>r.checked=false);document.getElementById('ladderBox').innerHTML='<div class="ladder-order" data-idx="0"><span class="ladder-num">Order 1</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)" style="display:none">✕</button></div>';orderCount=1;document.getElementById('addOrderBtn').disabled=false;['plDollar','plPercent','plR'].forEach(id=>{const el=document.getElementById(id);el.textContent=id==='plR'?'0.00R':id==='plPercent'?'0.00%':'0.00';el.className='plv';});document.getElementById('totalCap').textContent='$0';document.getElementById('totalPct').textContent='0%';document.getElementById('riskCheck').textContent='—';document.getElementById('riskCheck').style.color='var(--text-3)';chartFile=null;document.getElementById('chartInput').value='';document.getElementById('chartPreview').style.display='none';document.getElementById('uploadZone').classList.remove('has-file');const n=new Date();document.getElementById('t-date').value=n.toISOString().split('T')[0];document.getElementById('t-time').value=n.toTimeString().slice(0,5);}
+
+function editTrade(idx){const t=trades[idx];editRowIdx=t._row||(idx+2);document.getElementById('t-date').value=parseDMY(t.date);document.getElementById('t-time').value=t.time||'';document.getElementById('t-pair').value=t.pair||'';document.getElementById('t-dir').value=t.direction||'';document.getElementById('t-trend').value=t.trend||'';document.getElementById('t-struct').value=t.structure||'';document.getElementById('t-reason').value=t.entryReason||'';document.getElementById('t-sl').value=t.sl||'';document.getElementById('t-tp').value=t.tp||'';document.getElementById('t-exit').value=t.exitPrice||'';document.getElementById('t-exitTime').value=t.exitTime||'';document.getElementById('t-result').value=t.result||'Open';onResultChange();if(t.lossType&&t.lossType!=='-'){const lt=document.getElementById('lt-'+t.lossType.toLowerCase());if(lt)lt.checked=true;}if(t.exitType){const et=document.getElementById(t.exitType==='Plan'?'ext-plan':'ext-evolve');if(et)et.checked=true;}document.getElementById('t-right').value=t.right||'';document.getElementById('t-wrong').value=t.wrong||'';document.getElementById('t-improve').value=t.improve||'';
+  const box=document.getElementById('ladderBox');const ep=[t.entry1,t.entry2,t.entry3].filter(Boolean);box.innerHTML='';orderCount=0;if(!ep.length)ep.push('');ep.forEach((pr,i)=>{orderCount++;const div=document.createElement('div');div.className='ladder-order';div.dataset.idx=i;div.innerHTML=`<span class="ladder-num">Order ${i+1}</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" value="${pr}" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)" style="${orderCount>1?'':'display:none'}">✕</button>`;box.appendChild(div);});if(t.totalCap&&ep.length===1){const fc=box.querySelector('.lo-cap');if(fc)fc.value=t.totalCap;}document.getElementById('addOrderBtn').disabled=orderCount>=3;
+  if(t.chartUrl){const prev=document.getElementById('chartPreview');const match=t.chartUrl.match(/\/d\/([^/]+)/);if(match)prev.src=`https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`;prev.style.display='block';document.getElementById('uploadZone').classList.add('has-file');}calcAll();document.getElementById('editBadge').style.display='inline';document.getElementById('cancelEditBtn').style.display='';document.getElementById('saveBtn').innerHTML='✏️ UPDATE TRADE';goTab('entry');toast(`Editing: ${t.pair} — ${t.date}`,'inf');}
+function cancelEdit(){editRowIdx=null;document.getElementById('editBadge').style.display='none';document.getElementById('cancelEditBtn').style.display='none';document.getElementById('saveBtn').innerHTML='💾 SAVE TRADE';}
+
+// ══════════════════════════════════════════════════════════
+//  SECTION 3: STATISTICS
+// ══════════════════════════════════════════════════════════
+function parseRow(r){return{id:r[0]||'',date:r[1]||'',time:r[2]||'',pair:r[3]||'',direction:r[4]||'',entry1:r[5]||'',entry2:r[6]||'',entry3:r[7]||'',totalCap:r[8]||'',riskPct:r[9]||'',sl:r[10]||'',tp:r[11]||'',exitPrice:r[12]||'',exitTime:r[13]||'',result:r[14]||'',lossType:r[15]||'-',pl:parseFloat(r[16])||0,plPct:parseFloat(r[17])||0,rMult:parseFloat(r[18])||0,mental:parseInt(r[19])||0,mCalm:r[20]||'',mConf:r[21]||'',mRisk:r[22]||'',mObj:r[23]||'',mEng:r[24]||'',checkScore:r[25]||'',trend:r[26]||'',structure:r[27]||'',entryReason:r[28]||'',exitType:r[29]||'',right:r[30]||'',wrong:r[31]||'',improve:r[32]||'',chartUrl:r[33]||'',createdAt:r[34]||'',updatedAt:r[35]||''};}
+
+async function loadFromSheet(){try{toast('Loading...','inf');const rows=await sheetRead();trades=rows.map((r,i)=>({...parseRow(r),_row:i+2}));document.getElementById('tradeBadge').textContent=trades.length;refreshStats();toast(`Loaded ${trades.length} trades`,'ok');}catch(e){console.error(e);toast('Read error: '+e.message,'err');}}
+
+function refreshStats(){
+  const closed=trades.filter(t=>['Win','Loss','Breakeven'].includes(t.result));const wins=trades.filter(t=>t.result==='Win');const losses=trades.filter(t=>t.result==='Loss');
+  document.getElementById('st-total').textContent=trades.length;
+  const wr=closed.length>0?(wins.length/closed.length*100):0;const wrE=document.getElementById('st-wr');wrE.textContent=wr.toFixed(1)+'%';wrE.style.color=wr>=50?'var(--green)':wr>=40?'var(--amber)':'var(--red)';document.getElementById('st-wl').textContent=`${wins.length}W / ${losses.length}L`;
+  const tPL=trades.reduce((s,t)=>s+t.pl,0);const plE=document.getElementById('st-pl');plE.textContent=(tPL>=0?'+':'')+'$'+tPL.toFixed(2);plE.style.color=tPL>=0?'var(--green)':'var(--red)';
+  const mArr=trades.filter(t=>t.mental>0);const avgM=mArr.length>0?mArr.reduce((s,t)=>s+t.mental,0)/mArr.length:0;document.getElementById('st-mental').textContent=avgM.toFixed(1);
+  const hM=closed.filter(t=>t.mental>=18);const lM=closed.filter(t=>t.mental<18&&t.mental>0);
+  const wrH=hM.length>0?(hM.filter(t=>t.result==='Win').length/hM.length*100):0;
+  const wrL=lM.length>0?(lM.filter(t=>t.result==='Win').length/lM.length*100):0;
+  document.getElementById('st-wrHigh').textContent=hM.length>0?wrH.toFixed(0)+'%':'—';document.getElementById('st-wrHigh').style.color=wrH>=50?'var(--green)':'var(--red)';
+  document.getElementById('st-wrLow').textContent=lM.length>0?wrL.toFixed(0)+'%':'—';document.getElementById('st-wrLow').style.color=wrL>=50?'var(--green)':'var(--red)';
+  calcStreaks();renderTable();
+}
+
+function calcStreaks(){
+  let gS=0,bS=0;for(let i=trades.length-1;i>=0;i--){const t=trades[i];if(t.result==='Win')break;if(t.result==='Loss'){if(t.lossType==='Good'){gS++;bS=0;}else if(t.lossType==='Bad'){bS++;gS=0;}else break;}else break;}
+  let cW=0;for(let i=trades.length-1;i>=0;i--){if(trades[i].result==='Win')cW++;else break;}
+  if(cW>=3){gS=0;bS=0;}
+  document.getElementById('st-goodStreak').textContent=gS;document.getElementById('st-goodStreak').style.color=gS>0?'var(--amber)':'var(--text-1)';
+  document.getElementById('st-badStreak').textContent=bS;document.getElementById('st-badStreak').style.color=bS>0?'var(--red)':'var(--text-1)';
+  let ps=100;if(bS>=3)ps=25;else if(bS>=2||gS>=3)ps=50;
+  document.getElementById('st-posSize').textContent=ps+'%';document.getElementById('st-posSize').style.color=ps<100?'var(--amber)':'var(--green)';
+  const al=document.getElementById('streakAlert'),at=document.getElementById('streakAlertText');let paused=false,pm='';
+  if(bS>=3){paused=true;pm='⛔ Paused 7 days — Bad Loss x3 | Size: 25%';}else if(bS>=2){paused=true;pm='⛔ Paused 72 hrs — Bad Loss x2 | Size: 50%';}else if(bS>=1){paused=true;pm='⏸️ Paused 24 hrs — Bad Loss x1';}else if(gS>=3){paused=true;pm='⏸️ Paused 48 hrs — Good Loss x3 | Size: 50%';}else if(gS>=2){paused=true;pm='⏸️ Paused rest of day — Good Loss x2';}else if(gS>=1){paused=true;pm='⏸️ Paused 1 hr — Good Loss x1';}
+  if(cW>=3){paused=false;pm='';}
+  if(paused){al.className='streak-alert paused';al.querySelector('.streak-icon').textContent='⏸️';at.textContent=pm;}else{al.className='streak-alert ready';al.querySelector('.streak-icon').textContent='✅';at.textContent='Ready — พร้อมเทรดได้';}
+}
+
+function renderTable(){const tb=document.getElementById('tBody');if(!trades.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:36px;color:var(--text-4)">No trades yet</td></tr>';return;}tb.innerHTML=[...trades].reverse().map((t,ri)=>{const i=trades.length-1-ri;const dc=t.direction==='LONG'?'tag-long':'tag-short';const rc=t.result==='Win'?'tag-win':t.result==='Loss'?'tag-loss':t.result==='Breakeven'?'tag-be':'tag-open';const pc=t.pl>0?'color:var(--green)':t.pl<0?'color:var(--red)':'';const ci=t.chartUrl?`<a href="${t.chartUrl}" target="_blank" title="View Chart">📷</a>`:'';return`<tr><td style="color:var(--text-4)">${i+1}</td><td>${t.date}</td><td style="font-weight:600;color:var(--text-1)">${t.pair}</td><td><span class="tag ${dc}">${t.direction}</span></td><td><span class="tag ${rc}">${t.result}${t.lossType!=='-'&&t.result==='Loss'?' ('+t.lossType+')':''}</span></td><td>${t.mental}/25</td><td style="${pc};font-weight:600">${t.pl>=0?'+':''}${t.pl.toFixed(2)}</td><td>${ci}</td><td><button class="btn btn-s btn-sm" onclick="editTrade(${i})">✏️</button></td></tr>`;}).join('');}
+
+function exportExcel(){if(!trades.length){toast('No trades','err');return;}const h=['ID','Date','Time','Pair','Direction','Entry1','Entry2','Entry3','TotalCap','Risk%','SL','TP','ExitPrice','ExitTime','Result','LossType','P/L $','P/L %','R-Multiple','Mental','Calm','Confidence','Risk','Objectivity','Energy','Checklist','Trend','Structure','EntryReason','ExitType','WentRight','WentWrong','Improvement','ChartURL','CreatedAt','UpdatedAt'];const d=trades.map(t=>[t.id,t.date,t.time,t.pair,t.direction,t.entry1,t.entry2,t.entry3,t.totalCap,t.riskPct,t.sl,t.tp,t.exitPrice,t.exitTime,t.result,t.lossType,t.pl,t.plPct,t.rMult,t.mental,t.mCalm,t.mConf,t.mRisk,t.mObj,t.mEng,t.checkScore,t.trend,t.structure,t.entryReason,t.exitType,t.right,t.wrong,t.improve,t.chartUrl,t.createdAt,t.updatedAt]);const ws=XLSX.utils.aoa_to_sheet([h,...d]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Trades');XLSX.writeFile(wb,`StrixJournal_${new Date().toISOString().slice(0,10)}.xlsx`);toast('Excel exported!','ok');}
+
+// ═══ TOAST ═══
+function toast(msg,type='inf'){const box=document.getElementById('toastBox');const el=document.createElement('div');el.className='toast '+type;const ic={ok:'✅',err:'❌',inf:'ℹ️'};el.innerHTML=`${ic[type]||''} ${msg}`;box.appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(40px)';setTimeout(()=>el.remove(),250);},3500);}
+
+// ═══ INIT ═══
+initSetup();
+</script>
+</body>
+</html>
