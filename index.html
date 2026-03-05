@@ -174,7 +174,7 @@ input[type=file]{display:none;}
 .pass-indicator.fail{background:var(--red-dim);color:var(--red);border:1px solid rgba(248,113,113,.2);}
 
 /* ═══ LADDER ═══ */
-.ladder-order{display:grid;grid-template-columns:auto 1fr 1fr auto auto;gap:10px;align-items:end;padding:12px;background:var(--bg-3);border:1px solid var(--border-1);border-radius:var(--r-sm);margin-bottom:8px;}
+.ladder-order{display:grid;grid-template-columns:auto 1fr 1fr auto auto auto;gap:10px;align-items:end;padding:12px;background:var(--bg-3);border:1px solid var(--border-1);border-radius:var(--r-sm);margin-bottom:8px;}
 .ladder-num{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);background:var(--accent-dim);padding:4px 10px;border-radius:4px;white-space:nowrap;align-self:center;}
 .ladder-pct{font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--text-2);align-self:center;text-align:center;min-width:50px;}
 .ladder-total{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:14px;background:var(--bg-4);border:1px solid var(--border-2);border-radius:var(--r-sm);margin-top:4px;}
@@ -359,11 +359,44 @@ tbody tr{transition:var(--transition);}tbody tr:hover{background:var(--bg-hover)
 
 <!-- ═══ SECTION 2: TRADE ENTRY ═══ -->
 <div class="sec" id="s-entry">
-  <div class="card"><div class="card-h">Trade Information</div><div class="grid g4"><div class="fld"><label>Date <span class="req">*</span></label><input type="date" id="t-date"></div><div class="fld"><label>Time</label><input type="time" id="t-time"></div><div class="fld"><label>Pair <span class="req">*</span></label><input type="text" id="t-pair" placeholder="BTC/USDT" oninput="this.value=this.value.toUpperCase()"></div><div class="fld"><label>Direction <span class="req">*</span></label><select id="t-dir"><option value="">— เลือก —</option><option value="LONG">🟢 LONG</option><option value="SHORT">🔴 SHORT</option></select></div></div></div>
+  <!-- Portfolio -->
+  <div class="card">
+    <div class="card-h">Portfolio & Account</div>
+    <div class="grid g3">
+      <div class="fld"><label>💰 Investment / Portfolio ($) <span class="req">*</span></label><input type="number" step="any" id="t-portfolio" placeholder="1000" oninput="calcAll()"></div>
+      <div class="fld"><label>⚙️ Trade Type</label>
+        <select id="t-tradeType" onchange="onTradeTypeChange()">
+          <option value="Spot">Spot</option>
+          <option value="Future">Future</option>
+        </select>
+      </div>
+      <div class="fld" id="leverageBox" style="display:none"><label>⚡ Leverage</label><input type="number" step="1" min="1" max="200" id="t-leverage" value="1" placeholder="10" oninput="calcAll()"></div>
+    </div>
+  </div>
+  <!-- Trade Info -->
+  <div class="card"><div class="card-h">Trade Information</div><div class="grid g4">
+    <div class="fld"><label style="color:var(--text-4)">📅 Date <span class="req">*</span></label><input type="date" id="t-date"></div>
+    <div class="fld"><label style="color:var(--text-4)">🕐 Time</label><input type="time" id="t-time"></div>
+    <div class="fld"><label>Pair <span class="req">*</span></label><input type="text" id="t-pair" placeholder="BTC/USDT" oninput="this.value=this.value.toUpperCase()"></div>
+    <div class="fld"><label>Direction <span class="req">*</span></label><select id="t-dir"><option value="">— เลือก —</option><option value="LONG">🟢 LONG</option><option value="SHORT">🔴 SHORT</option></select></div>
+  </div></div>
 
   <div class="card"><div class="card-h">Market Analysis</div><div class="grid g3"><div class="fld"><label>Trend</label><select id="t-trend"><option value="">—</option><option value="Uptrend">Uptrend</option><option value="Downtrend">Downtrend</option><option value="Ranging">Ranging</option></select></div><div class="fld"><label>Structure</label><select id="t-struct"><option value="">—</option><option value="BOS">BOS</option><option value="CHoCH">CHoCH</option><option value="None">None</option></select></div></div><div class="fld" style="margin-top:12px"><label>Entry Reason</label><textarea id="t-reason" placeholder="เหตุผลในการเข้าเทรด..."></textarea></div></div>
 
-  <div class="card"><div class="card-h">Entry Orders — Ladder</div><div id="ladderBox"><div class="ladder-order" data-idx="0"><span class="ladder-num">Order 1</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)" style="display:none">✕</button></div></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-s btn-sm" id="addOrderBtn" onclick="addOrder()">+ Add Order</button></div><div class="ladder-total" id="ladderTotal"><div class="lt-item"><div class="lt-label">Total Capital</div><div class="lt-val" id="totalCap">$0</div></div><div class="lt-item"><div class="lt-label">Total Size</div><div class="lt-val" id="totalPct">0%</div></div><div class="lt-item"><div class="lt-label">Risk Check</div><div class="lt-val" id="riskCheck" style="color:var(--text-3)">—</div></div></div></div>
+  <div class="card"><div class="card-h">Entry Orders — Ladder</div><div id="ladderBox"><div class="ladder-order" data-idx="0"><span class="ladder-num">Order 1</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><div class="fld lo-margin-box"><label>Margin $</label><span class="lo-margin-val" style="font-family:var(--font-mono);font-size:.88rem;color:var(--cyan);padding:9px 0">—</span></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)" style="display:none">✕</button></div></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-s btn-sm" id="addOrderBtn" onclick="addOrder()">+ Add Order</button></div>
+    <div class="ladder-total" id="ladderTotal">
+      <div class="lt-item"><div class="lt-label">Total Capital</div><div class="lt-val" id="totalCap">$0</div></div>
+      <div class="lt-item"><div class="lt-label">Margin Used</div><div class="lt-val" id="totalMargin" style="color:var(--cyan)">$0</div></div>
+      <div class="lt-item"><div class="lt-label">% of Portfolio</div><div class="lt-val" id="totalPct">0%</div></div>
+      <div class="lt-item"><div class="lt-label">Risk Check</div><div class="lt-val" id="riskCheck" style="color:var(--text-3)">—</div></div>
+    </div>
+    <!-- RRR Display -->
+    <div id="rrrBox" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:14px;background:var(--bg-3);border:1px solid var(--border-2);border-radius:var(--r-sm);margin-top:8px;">
+      <div class="lt-item" style="text-align:center"><div class="lt-label">Risk $</div><div class="lt-val" id="rrrRisk" style="color:var(--red)">—</div></div>
+      <div class="lt-item" style="text-align:center"><div class="lt-label">Reward $</div><div class="lt-val" id="rrrReward" style="color:var(--green)">—</div></div>
+      <div class="lt-item" style="text-align:center"><div class="lt-label">R:R Ratio</div><div class="lt-val" id="rrrRatio" style="color:var(--amber)">—</div></div>
+    </div>
+  </div>
 
   <div class="card"><div class="card-h">Risk Management</div><div class="grid g3"><div class="fld"><label>Stop Loss <span class="req">*</span></label><input type="number" step="any" id="t-sl" oninput="calcAll()"></div><div class="fld"><label>Take Profit</label><input type="number" step="any" id="t-tp" oninput="calcAll()"></div></div></div>
 
@@ -379,10 +412,10 @@ tbody tr{transition:var(--transition);}tbody tr:hover{background:var(--bg-hover)
 <!-- ═══ SECTION 3: STATISTICS ═══ -->
 <div class="sec" id="s-stats">
   <div class="streak-alert ready" id="streakAlert"><span class="streak-icon">✅</span><span id="streakAlertText">Ready — พร้อมเทรดได้</span></div>
-  <div class="stats-row"><div class="stat"><div class="st-label">Total Trades</div><div class="st-val" id="st-total">0</div></div><div class="stat"><div class="st-label">Win Rate</div><div class="st-val" id="st-wr">0%</div><div class="st-sub" id="st-wl">0W / 0L</div></div><div class="stat"><div class="st-label">Total P/L</div><div class="st-val" id="st-pl">$0.00</div></div><div class="stat"><div class="st-label">Avg Mental</div><div class="st-val" id="st-mental">0</div><div class="st-sub">out of 25</div></div></div>
+  <div class="stats-row"><div class="stat"><div class="st-label">Total Trades</div><div class="st-val" id="st-total">0</div></div><div class="stat"><div class="st-label">Win Rate</div><div class="st-val" id="st-wr">0%</div><div class="st-sub" id="st-wl">0W / 0L</div></div><div class="stat"><div class="st-label">Total P/L</div><div class="st-val" id="st-pl">$0.00</div></div><div class="stat"><div class="st-label">Avg Mental</div><div class="st-val" id="st-mental">0</div><div class="st-sub">out of 25</div></div><div class="stat"><div class="st-label">Avg R:R Ratio</div><div class="st-val" id="st-rrr" style="color:var(--amber)">—</div><div class="st-sub" id="st-rrrSub"></div></div></div>
   <div class="stats-row"><div class="stat"><div class="st-label">WR (Mental ≥18)</div><div class="st-val" id="st-wrHigh">—</div></div><div class="stat"><div class="st-label">WR (Mental &lt;18)</div><div class="st-val" id="st-wrLow">—</div></div><div class="stat"><div class="st-label">Good Loss Streak</div><div class="st-val" id="st-goodStreak">0</div></div><div class="stat"><div class="st-label">Bad Loss Streak</div><div class="st-val" id="st-badStreak">0</div></div><div class="stat"><div class="st-label">Position Size</div><div class="st-val" id="st-posSize">100%</div></div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><button class="btn btn-p" onclick="goTab('pretrade')">🆕 New Trade</button><button class="btn btn-s" onclick="exportExcel()">📥 Export Excel</button><button class="btn btn-s" onclick="loadFromSheet()">🔄 Refresh</button></div>
-  <div class="card" style="padding:14px"><div class="card-h" style="margin-bottom:12px">Recent Trades</div><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Date</th><th>Pair</th><th>Dir</th><th>Result</th><th>Mental</th><th>P/L</th><th>Chart</th><th>Action</th></tr></thead><tbody id="tBody"><tr><td colspan="9" style="text-align:center;padding:36px;color:var(--text-4)">No trades yet</td></tr></tbody></table></div></div>
+  <div class="card" style="padding:14px"><div class="card-h" style="margin-bottom:12px">Recent Trades</div><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Date</th><th>Pair</th><th>Dir</th><th>Result</th><th>Mental</th><th>P/L</th><th>R:R</th><th>Chart</th><th>Action</th></tr></thead><tbody id="tBody"><tr><td colspan="10" style="text-align:center;padding:36px;color:var(--text-4)">No trades yet</td></tr></tbody></table></div></div>
 </div>
 
 </main>
@@ -610,10 +643,78 @@ function updateProceed(){document.getElementById('proceedBtn').disabled=document
 // ══════════════════════════════════════════════════════════
 let trades=[];let editRowIdx=null;let chartFile=null;let orderCount=1;
 
-function addOrder(){if(orderCount>=3)return;orderCount++;const box=document.getElementById('ladderBox');const div=document.createElement('div');div.className='ladder-order';div.dataset.idx=orderCount-1;div.innerHTML=`<span class="ladder-num">Order ${orderCount}</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)">✕</button>`;box.appendChild(div);if(orderCount>=3)document.getElementById('addOrderBtn').disabled=true;box.querySelectorAll('.lo-rm').forEach(b=>b.style.display=orderCount>1?'':'none');calcAll();}
+function onTradeTypeChange(){
+  const v=document.getElementById('t-tradeType').value;
+  document.getElementById('leverageBox').style.display=v==='Future'?'':'none';
+  if(v==='Spot')document.getElementById('t-leverage').value='1';
+  calcAll();
+}
+function getLeverage(){const v=parseFloat(document.getElementById('t-leverage').value)||1;return Math.max(1,v);}
+function getPortfolio(){return parseFloat(document.getElementById('t-portfolio').value)||0;}
+
+function addOrder(){if(orderCount>=3)return;orderCount++;const box=document.getElementById('ladderBox');const div=document.createElement('div');div.className='ladder-order';div.dataset.idx=orderCount-1;div.innerHTML=`<span class="ladder-num">Order ${orderCount}</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><div class="fld lo-margin-box"><label>Margin $</label><span class="lo-margin-val" style="font-family:var(--font-mono);font-size:.88rem;color:var(--cyan);padding:9px 0">—</span></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)">✕</button>`;box.appendChild(div);if(orderCount>=3)document.getElementById('addOrderBtn').disabled=true;box.querySelectorAll('.lo-rm').forEach(b=>b.style.display=orderCount>1?'':'none');calcAll();}
 function rmOrder(btn){btn.closest('.ladder-order').remove();orderCount--;document.getElementById('addOrderBtn').disabled=false;document.querySelectorAll('.ladder-order').forEach((r,i)=>{r.dataset.idx=i;r.querySelector('.ladder-num').textContent='Order '+(i+1);});document.getElementById('ladderBox').querySelectorAll('.lo-rm').forEach(b=>b.style.display=orderCount>1?'':'none');calcAll();}
 
-function calcAll(){const rows=document.querySelectorAll('.ladder-order');let totalCap=0;const caps=[];rows.forEach(r=>{const c=parseFloat(r.querySelector('.lo-cap')?.value)||0;caps.push(c);totalCap+=c;});rows.forEach((r,i)=>r.querySelector('.lo-pct').textContent=totalCap>0?((caps[i]/totalCap)*100).toFixed(0)+'%':'0%');document.getElementById('totalCap').textContent='$'+totalCap.toFixed(2);document.getElementById('totalPct').textContent='100%';const avg=getAvgEntry();const sl=parseFloat(document.getElementById('t-sl').value)||0;const riskEl=document.getElementById('riskCheck');if(avg>0&&sl>0&&totalCap>0){const rp=Math.abs(avg-sl)/avg*100;riskEl.textContent=rp.toFixed(1)+'% '+(rp<=2?'✅':'⚠️');riskEl.style.color=rp<=2?'var(--green)':'var(--red)';}else{riskEl.textContent='—';riskEl.style.color='var(--text-3)';}calcPL();}
+function calcAll(){
+  const rows=document.querySelectorAll('.ladder-order');
+  const lev=getLeverage();
+  const port=getPortfolio();
+  let totalCap=0,totalMargin=0;
+  const caps=[];
+  rows.forEach(r=>{
+    const c=parseFloat(r.querySelector('.lo-cap')?.value)||0;
+    caps.push(c);
+    totalCap+=c;
+    const margin=c/lev;
+    totalMargin+=margin;
+    const mEl=r.querySelector('.lo-margin-val');
+    if(mEl)mEl.textContent=c>0?'$'+margin.toFixed(2):'—';
+  });
+  // Size % of portfolio
+  rows.forEach((r,i)=>r.querySelector('.lo-pct').textContent=port>0?((caps[i]/port)*100).toFixed(1)+'%':totalCap>0?((caps[i]/totalCap)*100).toFixed(0)+'%':'0%');
+  document.getElementById('totalCap').textContent='$'+totalCap.toFixed(2);
+  document.getElementById('totalMargin').textContent='$'+totalMargin.toFixed(2);
+  // % of portfolio
+  const pctOfPort=port>0?(totalMargin/port*100):0;
+  document.getElementById('totalPct').textContent=port>0?pctOfPort.toFixed(1)+'%':'—';
+  document.getElementById('totalPct').style.color=pctOfPort>10?'var(--red)':pctOfPort>5?'var(--amber)':'var(--green)';
+  // Risk check
+  const avg=getAvgEntry();const sl=parseFloat(document.getElementById('t-sl').value)||0;
+  const riskEl=document.getElementById('riskCheck');
+  if(avg>0&&sl>0&&port>0){
+    // Risk $ = |avgEntry-SL|/avgEntry * totalCap
+    const riskDollar=Math.abs(avg-sl)/avg*totalCap;
+    const riskPctPort=(riskDollar/port)*100;
+    riskEl.textContent=riskPctPort.toFixed(1)+'% '+(riskPctPort<=2?'✅':'⚠️');
+    riskEl.style.color=riskPctPort<=2?'var(--green)':'var(--red)';
+  }else{riskEl.textContent='—';riskEl.style.color='var(--text-3)';}
+  // RRR
+  calcRRR();
+  calcPL();
+}
+
+function calcRRR(){
+  const avg=getAvgEntry();
+  const sl=parseFloat(document.getElementById('t-sl').value)||0;
+  const tp=parseFloat(document.getElementById('t-tp').value)||0;
+  const dir=document.getElementById('t-dir').value;
+  const totalCap=getTotalCap();
+  const riskEl=document.getElementById('rrrRisk');
+  const rewEl=document.getElementById('rrrReward');
+  const ratEl=document.getElementById('rrrRatio');
+  if(!avg||!sl||!tp||!dir){riskEl.textContent='—';rewEl.textContent='—';ratEl.textContent='—';return;}
+  let tq=0;document.querySelectorAll('.ladder-order').forEach(r=>{const p=parseFloat(r.querySelector('.lo-price')?.value)||0;const c=parseFloat(r.querySelector('.lo-cap')?.value)||0;if(p>0&&c>0)tq+=c/p;});
+  const m=dir==='LONG'?1:-1;
+  const riskDist=Math.abs(avg-sl);
+  const rewDist=Math.abs(tp-avg);
+  const riskD=riskDist*tq;
+  const rewD=rewDist*tq;
+  const rrr=riskDist>0?rewDist/riskDist:0;
+  riskEl.textContent='-$'+riskD.toFixed(2);
+  rewEl.textContent='+$'+rewD.toFixed(2);
+  ratEl.textContent='1:'+rrr.toFixed(2);
+  ratEl.style.color=rrr>=2?'var(--green)':rrr>=1?'var(--amber)':'var(--red)';
+}
 
 function getAvgEntry(){const rows=document.querySelectorAll('.ladder-order');let tc=0,tq=0;rows.forEach(r=>{const p=parseFloat(r.querySelector('.lo-price')?.value)||0;const c=parseFloat(r.querySelector('.lo-cap')?.value)||0;if(p>0&&c>0){tc+=c;tq+=c/p;}});return tq>0?tc/tq:0;}
 function getTotalCap(){let t=0;document.querySelectorAll('.lo-cap').forEach(el=>t+=parseFloat(el.value)||0);return t;}
@@ -662,10 +763,10 @@ async function saveTrade(){
   btn.disabled=false;btn.innerHTML=editRowIdx!==null?'✏️ UPDATE TRADE':'💾 SAVE TRADE';
 }
 
-function clearForm(){['t-date','t-time','t-pair','t-dir','t-trend','t-struct','t-reason','t-sl','t-tp','t-exit','t-exitTime','t-right','t-wrong','t-improve'].forEach(id=>{const el=document.getElementById(id);if(el.tagName==='SELECT')el.selectedIndex=0;else el.value='';});document.getElementById('t-result').value='Open';onResultChange();document.querySelectorAll('input[name="exitType"],input[name="lossType"]').forEach(r=>r.checked=false);document.getElementById('ladderBox').innerHTML='<div class="ladder-order" data-idx="0"><span class="ladder-num">Order 1</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)" style="display:none">✕</button></div>';orderCount=1;document.getElementById('addOrderBtn').disabled=false;['plDollar','plPercent','plR'].forEach(id=>{const el=document.getElementById(id);el.textContent=id==='plR'?'0.00R':id==='plPercent'?'0.00%':'0.00';el.className='plv';});document.getElementById('totalCap').textContent='$0';document.getElementById('totalPct').textContent='0%';document.getElementById('riskCheck').textContent='—';document.getElementById('riskCheck').style.color='var(--text-3)';chartFile=null;document.getElementById('chartInput').value='';document.getElementById('chartPreview').style.display='none';document.getElementById('uploadZone').classList.remove('has-file');const n=new Date();document.getElementById('t-date').value=n.toISOString().split('T')[0];document.getElementById('t-time').value=n.toTimeString().slice(0,5);}
+function clearForm(){['t-date','t-time','t-pair','t-dir','t-trend','t-struct','t-reason','t-sl','t-tp','t-exit','t-exitTime','t-right','t-wrong','t-improve'].forEach(id=>{const el=document.getElementById(id);if(el.tagName==='SELECT')el.selectedIndex=0;else el.value='';});document.getElementById('t-result').value='Open';onResultChange();document.querySelectorAll('input[name="exitType"],input[name="lossType"]').forEach(r=>r.checked=false);document.getElementById('ladderBox').innerHTML='<div class="ladder-order" data-idx="0"><span class="ladder-num">Order 1</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><div class="fld lo-margin-box"><label>Margin $</label><span class="lo-margin-val" style="font-family:var(--font-mono);font-size:.88rem;color:var(--cyan);padding:9px 0">—</span></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)" style="display:none">✕</button></div>';orderCount=1;document.getElementById('addOrderBtn').disabled=false;['plDollar','plPercent','plR'].forEach(id=>{const el=document.getElementById(id);el.textContent=id==='plR'?'0.00R':id==='plPercent'?'0.00%':'0.00';el.className='plv';});document.getElementById('totalCap').textContent='$0';document.getElementById('totalMargin').textContent='$0';document.getElementById('totalPct').textContent='0%';document.getElementById('riskCheck').textContent='—';document.getElementById('riskCheck').style.color='var(--text-3)';document.getElementById('rrrRisk').textContent='—';document.getElementById('rrrReward').textContent='—';document.getElementById('rrrRatio').textContent='—';chartFile=null;document.getElementById('chartInput').value='';document.getElementById('chartPreview').style.display='none';document.getElementById('uploadZone').classList.remove('has-file');const n=new Date();document.getElementById('t-date').value=n.toISOString().split('T')[0];document.getElementById('t-time').value=n.toTimeString().slice(0,5);}
 
 function editTrade(idx){const t=trades[idx];editRowIdx=t._row||(idx+2);document.getElementById('t-date').value=parseDMY(t.date);document.getElementById('t-time').value=t.time||'';document.getElementById('t-pair').value=t.pair||'';document.getElementById('t-dir').value=t.direction||'';document.getElementById('t-trend').value=t.trend||'';document.getElementById('t-struct').value=t.structure||'';document.getElementById('t-reason').value=t.entryReason||'';document.getElementById('t-sl').value=t.sl||'';document.getElementById('t-tp').value=t.tp||'';document.getElementById('t-exit').value=t.exitPrice||'';document.getElementById('t-exitTime').value=t.exitTime||'';document.getElementById('t-result').value=t.result||'Open';onResultChange();if(t.lossType&&t.lossType!=='-'){const lt=document.getElementById('lt-'+t.lossType.toLowerCase());if(lt)lt.checked=true;}if(t.exitType){const et=document.getElementById(t.exitType==='Plan'?'ext-plan':'ext-evolve');if(et)et.checked=true;}document.getElementById('t-right').value=t.right||'';document.getElementById('t-wrong').value=t.wrong||'';document.getElementById('t-improve').value=t.improve||'';
-  const box=document.getElementById('ladderBox');const ep=[t.entry1,t.entry2,t.entry3].filter(Boolean);box.innerHTML='';orderCount=0;if(!ep.length)ep.push('');ep.forEach((pr,i)=>{orderCount++;const div=document.createElement('div');div.className='ladder-order';div.dataset.idx=i;div.innerHTML=`<span class="ladder-num">Order ${i+1}</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" value="${pr}" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)" style="${orderCount>1?'':'display:none'}">✕</button>`;box.appendChild(div);});if(t.totalCap&&ep.length===1){const fc=box.querySelector('.lo-cap');if(fc)fc.value=t.totalCap;}document.getElementById('addOrderBtn').disabled=orderCount>=3;
+  const box=document.getElementById('ladderBox');const ep=[t.entry1,t.entry2,t.entry3].filter(Boolean);box.innerHTML='';orderCount=0;if(!ep.length)ep.push('');ep.forEach((pr,i)=>{orderCount++;const div=document.createElement('div');div.className='ladder-order';div.dataset.idx=i;div.innerHTML=`<span class="ladder-num">Order ${i+1}</span><div class="fld"><label>Entry Price</label><input type="number" step="any" class="lo-price" value="${pr}" oninput="calcAll()"></div><div class="fld"><label>Capital $</label><input type="number" step="any" class="lo-cap" oninput="calcAll()"></div><div class="fld lo-margin-box"><label>Margin $</label><span class="lo-margin-val" style="font-family:var(--font-mono);font-size:.88rem;color:var(--cyan);padding:9px 0">—</span></div><span class="ladder-pct lo-pct">0%</span><button class="btn btn-d btn-sm lo-rm" onclick="rmOrder(this)" style="${orderCount>1?'':'display:none'}">✕</button>`;box.appendChild(div);});if(t.totalCap&&ep.length===1){const fc=box.querySelector('.lo-cap');if(fc)fc.value=t.totalCap;}document.getElementById('addOrderBtn').disabled=orderCount>=3;
   if(t.chartUrl){const prev=document.getElementById('chartPreview');const match=t.chartUrl.match(/\/d\/([^/]+)/);if(match)prev.src=`https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`;prev.style.display='block';document.getElementById('uploadZone').classList.add('has-file');}calcAll();document.getElementById('editBadge').style.display='inline';document.getElementById('cancelEditBtn').style.display='';document.getElementById('saveBtn').innerHTML='✏️ UPDATE TRADE';goTab('entry');toast(`Editing: ${t.pair} — ${t.date}`,'inf');}
 function cancelEdit(){editRowIdx=null;document.getElementById('editBadge').style.display='none';document.getElementById('cancelEditBtn').style.display='none';document.getElementById('saveBtn').innerHTML='💾 SAVE TRADE';}
 
@@ -682,6 +783,16 @@ function refreshStats(){
   const wr=closed.length>0?(wins.length/closed.length*100):0;const wrE=document.getElementById('st-wr');wrE.textContent=wr.toFixed(1)+'%';wrE.style.color=wr>=50?'var(--green)':wr>=40?'var(--amber)':'var(--red)';document.getElementById('st-wl').textContent=`${wins.length}W / ${losses.length}L`;
   const tPL=trades.reduce((s,t)=>s+t.pl,0);const plE=document.getElementById('st-pl');plE.textContent=(tPL>=0?'+':'')+'$'+tPL.toFixed(2);plE.style.color=tPL>=0?'var(--green)':'var(--red)';
   const mArr=trades.filter(t=>t.mental>0);const avgM=mArr.length>0?mArr.reduce((s,t)=>s+t.mental,0)/mArr.length:0;document.getElementById('st-mental').textContent=avgM.toFixed(1);
+  // Avg RRR (R-Multiple)
+  const rArr=closed.filter(t=>Math.abs(t.rMult)>0);
+  const avgR=rArr.length>0?rArr.reduce((s,t)=>s+t.rMult,0)/rArr.length:0;
+  const rrrEl=document.getElementById('st-rrr');
+  rrrEl.textContent=rArr.length>0?(avgR>=0?'+':'')+avgR.toFixed(2)+'R':'—';
+  rrrEl.style.color=avgR>0?'var(--green)':avgR<0?'var(--red)':'var(--amber)';
+  const winR=wins.filter(t=>Math.abs(t.rMult)>0);const lossR=losses.filter(t=>Math.abs(t.rMult)>0);
+  const avgWinR=winR.length>0?winR.reduce((s,t)=>s+t.rMult,0)/winR.length:0;
+  const avgLossR=lossR.length>0?lossR.reduce((s,t)=>s+t.rMult,0)/lossR.length:0;
+  document.getElementById('st-rrrSub').textContent=winR.length>0?`Win avg: +${avgWinR.toFixed(2)}R | Loss avg: ${avgLossR.toFixed(2)}R`:'';
   const hM=closed.filter(t=>t.mental>=18);const lM=closed.filter(t=>t.mental<18&&t.mental>0);
   const wrH=hM.length>0?(hM.filter(t=>t.result==='Win').length/hM.length*100):0;
   const wrL=lM.length>0?(lM.filter(t=>t.result==='Win').length/lM.length*100):0;
@@ -704,7 +815,7 @@ function calcStreaks(){
   if(paused){al.className='streak-alert paused';al.querySelector('.streak-icon').textContent='⏸️';at.textContent=pm;}else{al.className='streak-alert ready';al.querySelector('.streak-icon').textContent='✅';at.textContent='Ready — พร้อมเทรดได้';}
 }
 
-function renderTable(){const tb=document.getElementById('tBody');if(!trades.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:36px;color:var(--text-4)">No trades yet</td></tr>';return;}tb.innerHTML=[...trades].reverse().map((t,ri)=>{const i=trades.length-1-ri;const dc=t.direction==='LONG'?'tag-long':'tag-short';const rc=t.result==='Win'?'tag-win':t.result==='Loss'?'tag-loss':t.result==='Breakeven'?'tag-be':'tag-open';const pc=t.pl>0?'color:var(--green)':t.pl<0?'color:var(--red)':'';const ci=t.chartUrl?`<a href="${t.chartUrl}" target="_blank" title="View Chart">📷</a>`:'';return`<tr><td style="color:var(--text-4)">${i+1}</td><td>${t.date}</td><td style="font-weight:600;color:var(--text-1)">${t.pair}</td><td><span class="tag ${dc}">${t.direction}</span></td><td><span class="tag ${rc}">${t.result}${t.lossType!=='-'&&t.result==='Loss'?' ('+t.lossType+')':''}</span></td><td>${t.mental}/25</td><td style="${pc};font-weight:600">${t.pl>=0?'+':''}${t.pl.toFixed(2)}</td><td>${ci}</td><td><button class="btn btn-s btn-sm" onclick="editTrade(${i})">✏️</button></td></tr>`;}).join('');}
+function renderTable(){const tb=document.getElementById('tBody');if(!trades.length){tb.innerHTML='<tr><td colspan="10" style="text-align:center;padding:36px;color:var(--text-4)">No trades yet</td></tr>';return;}tb.innerHTML=[...trades].reverse().map((t,ri)=>{const i=trades.length-1-ri;const dc=t.direction==='LONG'?'tag-long':'tag-short';const rc=t.result==='Win'?'tag-win':t.result==='Loss'?'tag-loss':t.result==='Breakeven'?'tag-be':'tag-open';const pc=t.pl>0?'color:var(--green)':t.pl<0?'color:var(--red)':'';const ci=t.chartUrl?`<a href="${t.chartUrl}" target="_blank" title="View Chart">📷</a>`:'';const rr=t.rMult?(t.rMult>=0?'+':'')+t.rMult.toFixed(2)+'R':'—';const rrc=t.rMult>0?'color:var(--green)':t.rMult<0?'color:var(--red)':'';return`<tr><td style="color:var(--text-4)">${i+1}</td><td>${t.date}</td><td style="font-weight:600;color:var(--text-1)">${t.pair}</td><td><span class="tag ${dc}">${t.direction}</span></td><td><span class="tag ${rc}">${t.result}${t.lossType!=='-'&&t.result==='Loss'?' ('+t.lossType+')':''}</span></td><td>${t.mental}/25</td><td style="${pc};font-weight:600">${t.pl>=0?'+':''}${t.pl.toFixed(2)}</td><td style="${rrc}">${rr}</td><td>${ci}</td><td><button class="btn btn-s btn-sm" onclick="editTrade(${i})">✏️</button></td></tr>`;}).join('');}
 
 function exportExcel(){if(!trades.length){toast('No trades','err');return;}const h=['ID','Date','Time','Pair','Direction','Entry1','Entry2','Entry3','TotalCap','Risk%','SL','TP','ExitPrice','ExitTime','Result','LossType','P/L $','P/L %','R-Multiple','Mental','Calm','Confidence','Risk','Objectivity','Energy','Checklist','Trend','Structure','EntryReason','ExitType','WentRight','WentWrong','Improvement','ChartURL','CreatedAt','UpdatedAt'];const d=trades.map(t=>[t.id,t.date,t.time,t.pair,t.direction,t.entry1,t.entry2,t.entry3,t.totalCap,t.riskPct,t.sl,t.tp,t.exitPrice,t.exitTime,t.result,t.lossType,t.pl,t.plPct,t.rMult,t.mental,t.mCalm,t.mConf,t.mRisk,t.mObj,t.mEng,t.checkScore,t.trend,t.structure,t.entryReason,t.exitType,t.right,t.wrong,t.improve,t.chartUrl,t.createdAt,t.updatedAt]);const ws=XLSX.utils.aoa_to_sheet([h,...d]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Trades');XLSX.writeFile(wb,`StrixJournal_${new Date().toISOString().slice(0,10)}.xlsx`);toast('Excel exported!','ok');}
 
