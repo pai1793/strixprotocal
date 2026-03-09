@@ -11,15 +11,16 @@
   ║  ⚠️  ใส่ Google Client ID ตรงนี้ (ดูวิธีตั้งค่าในไฟล์ SETUP_GUIDE)  ║
   ╚══════════════════════════════════════════════════════════════╝
 -->
-<meta name="google-signin-client_id" content="1077559822657-ssj27eo0l48iva3d3l84omreid3f9f55.apps.googleusercontent.com">
+<meta name="google-signin-client_id" content="PASTE_YOUR_CLIENT_ID_HERE">
 <script>
 // ==========================================
 // ⚠️ CONFIG — ใส่ Client ID ตรงนี้
 // ==========================================
-const GOOGLE_CLIENT_ID = '1077559822657-ssj27eo0l48iva3d3l84omreid3f9f55.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = 'PASTE_YOUR_CLIENT_ID_HERE';
 // ==========================================
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
 const SHEET_TITLE = 'Strix Trading Journal';
+const FOLDER_TITLE = 'Strix Screenshots';
 const HEADERS = ['ID','Date_Open','Date_Close','Pair','Direction','Margin','Leverage','Position_Size','Entry','SL','TP','Exit','PnL','R_Actual','Risk_Pct','RR_Planned','Setup_Match','HTF','Plan_Followed','Plan_Reason','Fee','Drive_Image_ID'];
 </script>
 <style>
@@ -284,7 +285,9 @@ input,select{font-family:'IBM Plex Mono','Noto Sans Thai',monospace}
 <div class="c">
 <div class="set-item"><div><div class="si-l"><span class="sync-dot" id="syncDot"></span>สถานะ</div><div class="si-s" id="gEmail">—</div></div><div id="gStat" style="font-size:11px;color:var(--t3)">—</div></div>
 <div class="set-item"><div><div class="si-l">📋 Sheet ID</div><div class="si-s">สร้างอัตโนมัติ</div></div><div id="gSheet" style="font-size:10px;color:var(--t3);max-width:140px;word-break:break-all">—</div></div>
+<div class="set-item"><div><div class="si-l">📁 Screenshots Folder</div><div class="si-s">เก็บรูปภาพทั้งหมด</div></div><div id="gFolder" style="font-size:10px;color:var(--t3);max-width:140px;word-break:break-all">—</div></div>
 <button class="btn o" onclick="openSheet()" style="font-size:12px;padding:8px;margin-top:8px">📋 เปิด Google Sheet</button>
+<button class="btn o" onclick="openFolder()" style="font-size:12px;padding:8px">📁 เปิดโฟลเดอร์รูปภาพ</button>
 </div>
 <div class="st">ข้อมูล</div>
 <div class="c">
@@ -306,7 +309,7 @@ input,select{font-family:'IBM Plex Mono','Noto Sans Thai',monospace}
 
 <script>
 // ========================= GOOGLE AUTH =========================
-let gToken=null, gEmail=null, gSheetId=null;
+let gToken=null, gEmail=null, gSheetId=null, gFolderId=null;
 let tokenClient=null;
 
 function initGIS(){
@@ -341,12 +344,15 @@ async function onToken(resp){
     gEmail=me.email;
     // Find or create sheet
     await findOrCreateSheet();
+    // Find or create screenshots folder
+    await findOrCreateFolder();
     // Load data from sheet
     await loadFromSheet();
     // Save token info
     localStorage.setItem('strix3_token',gToken);
     localStorage.setItem('strix3_email',gEmail);
     localStorage.setItem('strix3_sheet',gSheetId);
+    localStorage.setItem('strix3_folder',gFolderId);
     enterApp();
   }catch(e){
     showLoginErr('❌ เกิดข้อผิดพลาด: '+e.message);
@@ -383,6 +389,21 @@ async function findOrCreateSheet(){
   await gFetch(`https://sheets.googleapis.com/v4/spreadsheets/${gSheetId}/values/Trades!A1:V1?valueInputOption=RAW`,{
     method:'PUT',body:JSON.stringify({values:[HEADERS]})
   });
+}
+
+async function findOrCreateFolder(){
+  // Search for existing folder
+  const search=await gFetch('https://www.googleapis.com/drive/v3/files?q=name%3D%27'+encodeURIComponent(FOLDER_TITLE)+'%27+and+mimeType%3D%27application/vnd.google-apps.folder%27+and+trashed%3Dfalse&fields=files(id,name)');
+  if(search.files&&search.files.length>0){
+    gFolderId=search.files[0].id;
+    return;
+  }
+  // Create new folder
+  const created=await gFetch('https://www.googleapis.com/drive/v3/files',{
+    method:'POST',
+    body:JSON.stringify({name:FOLDER_TITLE,mimeType:'application/vnd.google-apps.folder'})
+  });
+  gFolderId=created.id;
 }
 
 async function loadFromSheet(){
@@ -434,6 +455,7 @@ async function uploadToDrive(base64,trade){
     setSyncStatus('loading');
     const blob=await(await fetch(base64)).blob();
     const meta={name:`strix_${trade.pair}_${trade.closeDate}_${trade.id}.png`,mimeType:'image/png'};
+    if(gFolderId) meta.parents=[gFolderId];
     const form=new FormData();
     form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
     form.append('file',blob);
@@ -457,6 +479,9 @@ function setSyncStatus(s){
 function openSheet(){
   if(gSheetId)window.open('https://docs.google.com/spreadsheets/d/'+gSheetId,'_blank');
 }
+function openFolder(){
+  if(gFolderId)window.open('https://drive.google.com/drive/folders/'+gFolderId,'_blank');
+}
 
 // ========================= STATE =========================
 let trades=[];
@@ -472,7 +497,7 @@ function loadLocal(){
   try{trades=JSON.parse(localStorage.getItem('strix3_trades'))||[]}catch(e){trades=[]}
   try{settings=JSON.parse(localStorage.getItem('strix3_settings'))||{balance:1000,weeklyLimit:5}}catch(e){}
   moodDate=localStorage.getItem('strix3_mood_date');mood=localStorage.getItem('strix3_mood');
-  gToken=localStorage.getItem('strix3_token');gEmail=localStorage.getItem('strix3_email');gSheetId=localStorage.getItem('strix3_sheet');
+  gToken=localStorage.getItem('strix3_token');gEmail=localStorage.getItem('strix3_email');gSheetId=localStorage.getItem('strix3_sheet');gFolderId=localStorage.getItem('strix3_folder');
 }
 
 const today=()=>new Date().toISOString().split('T')[0];
@@ -681,6 +706,7 @@ function saveSt(){settings.balance=parseFloat(document.getElementById('sBal').va
 function loadSt(){document.getElementById('sBal').value=settings.balance||'';document.getElementById('sWL').value=settings.weeklyLimit||5;
   document.getElementById('gEmail').textContent=gEmail||'—';
   document.getElementById('gSheet').textContent=gSheetId?gSheetId.substring(0,24)+'...':'—';
+  document.getElementById('gFolder').textContent=gFolderId?'✅ '+FOLDER_TITLE:'—';
   setSyncStatus(gToken?'on':'off');
 }
 
@@ -697,7 +723,7 @@ function nav(n){
 }
 
 function exportJ(){const b=new Blob([JSON.stringify({trades,settings},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='strix_'+today()+'.json';a.click()}
-function resetAll(){if(confirm('ล้างข้อมูลทั้งหมด?')){['strix3_trades','strix3_settings','strix3_mood_date','strix3_mood','strix3_token','strix3_email','strix3_sheet'].forEach(k=>localStorage.removeItem(k));location.reload()}}
+function resetAll(){if(confirm('ล้างข้อมูลทั้งหมด?')){['strix3_trades','strix3_settings','strix3_mood_date','strix3_mood','strix3_token','strix3_email','strix3_sheet','strix3_folder'].forEach(k=>localStorage.removeItem(k));location.reload()}}
 
 function enterApp(){
   document.getElementById('loginPage').style.display='none';
